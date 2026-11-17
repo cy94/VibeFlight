@@ -127,7 +127,7 @@ const PLANES=[
   wings:[{root:7.4,tip:1.6,span:15.2,sweep:8.4,x0:1.6,z:-3.2,y:-1.2,dih:.1,thick:.55,flaps:[.04,.55],ail:[.6,.88]}],
   htail:{root:4.0,tip:1.3,span:6.3,sweep:4.4,x0:.8,z:13.6,y:.5,dih:.12,thick:.22},
   vtails:[{root:6.4,tip:2.2,h:6.8,sweep:5.6,z:11.4,y:1.6,x:0,cant:0}],
-  windshield:{z:-16.6,y:.95,w:1.25,h:.55,len:1.5},windows:{y:.55,z0:-14,z1:12,step:.95},
+  windshield:{z:-16.6,y:.95,w:1.25,h:.55,len:1.5},windows:{y:.55,z0:-14,z1:12,step:.95},stripe:true,
   pods:[{x:5.0,y:-1.85,z:-4.8,r:.92,len:4.6,pylon:'wing'},{x:-5.0,y:-1.85,z:-4.8,r:.92,len:4.6,pylon:'wing'}],
   gear:{y0:-1.4,nose:{z:-14.2,r:.42,two:true},main:{x:2.9,z:2.0,r:.58,two:true}},eye:[-.5,.95,-16.9],lightSize:2.2}},
 {id:'lj45',name:'Learjet 45',role:'Business jet · light & nimble',
@@ -142,6 +142,55 @@ const PLANES=[
   windshield:{z:-6.4,y:.5,w:.62,h:.38,len:1.1},windows:{y:.25,z0:-4.6,z1:1.4,step:1.0,big:true},
   pods:[{x:1.4,y:.45,z:4.4,r:.5,len:2.6,pylon:'fus'},{x:-1.4,y:.45,z:4.4,r:.5,len:2.6,pylon:'fus'}],
   gear:{y0:-.55,nose:{z:-6.4,r:.26},main:{x:1.3,z:.9,r:.36}},eye:[-.3,.55,-6.6],lightSize:1.3}},
+{id:'a20n',name:'Airbus A320neo',role:'Narrow-body airliner · sidestick FBW',
+ mass:64000,S:122.6,span:35.8,thrust:240000,ab:0,CL0:0.25,CLa:5.6,stall:15,aoaLimit:13,CD0:0.021,K:0.042,gearCD:0.022,sbCD:0.035,
+ mcrit:0.78,waveK:4,maxG:2.5,pitchRate:7,rollRate:30,yawRate:6,yawStab:1.4,resp:2.4,gearH:3.6,tailStrike:11.5,maxSink:3.6,
+ flaps:[{n:'0',deg:0,cl:0,cd:0,vmax:999},{n:'1+F',deg:10,cl:.25,cd:.006,vmax:215},{n:'2',deg:15,cl:.45,cd:.015,vmax:200},{n:'3',deg:20,cl:.65,cd:.03,vmax:185},{n:'FULL',deg:35,cl:.85,cd:.055,vmax:177}],
+ toFlap:1,asiMax:400,vmo:350,mmo:0.82,gearTime:7,flapRate:4,
+ model:{color:'#f4f5f7',accent:'#c8102e',fus:{prof:[[0,18.8],[.8,18.2],[1.4,17.2],[1.85,15.6],[1.98,13.5],[1.98,-10],[1.75,-13.5],[1.2,-16.6],[.45,-18.8]],xs:1,ys:1.05},
+  wings:[{root:7.2,tip:1.5,span:15.0,sweep:7.6,x0:1.8,z:-3.0,y:-1.3,dih:.1,thick:.55,flaps:[.04,.6],ail:[.64,.9]}],
+  htail:{root:3.8,tip:1.3,span:5.9,sweep:4.0,x0:.8,z:13.2,y:.6,dih:.1,thick:.22},
+  vtails:[{root:6.0,tip:2.1,h:6.4,sweep:5.0,z:11.0,y:1.7,x:0,cant:0}],
+  windshield:{z:-15.9,y:1.0,w:1.3,h:.6,len:1.5},windows:{y:.6,z0:-13.4,z1:11.5,step:.95},stripe:true,
+  pods:[{x:5.75,y:-2.0,z:-4.6,r:1.08,len:4.8,pylon:'wing'},{x:-5.75,y:-2.0,z:-4.6,r:1.08,len:4.8,pylon:'wing'}],
+  gear:{y0:-1.5,nose:{z:-13.8,r:.42,two:true},main:{x:3.8,z:2.2,r:.6,two:true}},eye:[-.5,1.0,-16.2],lightSize:2.2}},
+{id:'b77w',name:'Boeing 777-300ER',role:'Wide-body twinjet · big & stable',
+ mass:235000,S:436.8,span:64.8,thrust:1026000,ab:0,CL0:0.25,CLa:5.7,stall:15,aoaLimit:0,CD0:0.02,K:0.04,gearCD:0.02,sbCD:0.03,
+ mcrit:0.84,waveK:4,maxG:2.5,pitchRate:5,rollRate:22,yawRate:4,yawStab:1.2,resp:1.6,gearH:5.6,tailStrike:9,maxSink:3.3,
+ flaps:[{n:'UP',deg:0,cl:0,cd:0,vmax:999},{n:'1',deg:1,cl:.12,cd:.003,vmax:255},{n:'5',deg:5,cl:.30,cd:.008,vmax:235},{n:'15',deg:15,cl:.50,cd:.018,vmax:215},{n:'20',deg:20,cl:.62,cd:.026,vmax:195},{n:'25',deg:25,cl:.78,cd:.04,vmax:185},{n:'30',deg:30,cl:.92,cd:.06,vmax:170}],
+ toFlap:2,asiMax:400,vmo:330,mmo:0.89,gearTime:9,flapRate:3,
+ model:{color:'#f3f4f6',accent:'#0b3d7a',fus:{prof:[[0,37],[1.4,36],[2.4,34.4],[2.95,32],[3.1,29],[3.1,-22],[2.7,-28],[1.8,-33.5],[.7,-37]],xs:1,ys:1.04},
+  wings:[{root:13,tip:2.8,span:29,sweep:17,x0:2.6,z:-6,y:-2.3,dih:.1,thick:.9,flaps:[.04,.55],ail:[.6,.88]}],
+  htail:{root:7,tip:2.4,span:10.5,sweep:7,x0:1.2,z:27,y:.8,dih:.1,thick:.35},
+  vtails:[{root:11,tip:4,h:11,sweep:9,z:22,y:2.6,x:0,cant:0}],
+  windshield:{z:-34,y:1.5,w:2,h:.85,len:2.2},windows:{y:.9,z0:-30,z1:24,step:1},stripe:true,
+  pods:[{x:9.6,y:-3.3,z:-10,r:1.75,len:7.2,pylon:'wing'},{x:-9.6,y:-3.3,z:-10,r:1.75,len:7.2,pylon:'wing'}],
+  gear:{y0:-2.6,nose:{z:-30,r:.6,two:true},main:{x:5.5,z:3,r:.8,two:true}},eye:[-.8,1.5,-34.6],lightSize:3.5}},
+{id:'b744',name:'Boeing 747-400',role:'Four-engine jumbo · queen of the skies',
+ mass:255000,S:541,span:64.4,thrust:1008000,ab:0,CL0:0.24,CLa:5.6,stall:15,aoaLimit:0,CD0:0.022,K:0.042,gearCD:0.022,sbCD:0.03,
+ mcrit:0.85,waveK:4,maxG:2.5,pitchRate:5,rollRate:22,yawRate:4,yawStab:1.2,resp:1.5,gearH:5.4,tailStrike:11,maxSink:3.3,
+ flaps:[{n:'UP',deg:0,cl:0,cd:0,vmax:999},{n:'1',deg:1,cl:.10,cd:.003,vmax:280},{n:'5',deg:5,cl:.28,cd:.008,vmax:260},{n:'10',deg:10,cl:.42,cd:.014,vmax:240},{n:'20',deg:20,cl:.62,cd:.025,vmax:230},{n:'25',deg:25,cl:.80,cd:.04,vmax:205},{n:'30',deg:30,cl:.92,cd:.058,vmax:180}],
+ toFlap:3,asiMax:400,vmo:365,mmo:0.92,gearTime:9,flapRate:3,
+ model:{color:'#f5f5f2',accent:'#b8862b',fus:{prof:[[0,35.3],[1.5,34.2],[2.6,32],[3.15,28.5],[3.25,22],[3.25,-20],[2.85,-26],[1.8,-31.5],[.6,-35.3]],xs:1,ys:1.05},
+  hump:{y:2.6,z:21,len:15,w:2.5,h:2.7},
+  wings:[{root:14.5,tip:4,span:29,sweep:19,x0:3,z:-9,y:-2.2,dih:.12,thick:1,flaps:[.04,.55],ail:[.6,.88]}],
+  htail:{root:7.5,tip:2.5,span:11,sweep:7,x0:1.2,z:24.5,y:.9,dih:.12,thick:.35},
+  vtails:[{root:11.5,tip:4.2,h:10.5,sweep:9,z:20.5,y:2.8,x:0,cant:0}],
+  windshield:{z:-28.6,y:4.3,w:1.6,h:.7,len:1.8},windows:{rows:[1.0,4.3],rowZ:[[-30,25],[-31,-13]],step:1},stripe:true,
+  pods:[{x:11.8,y:-2.9,z:-5.5,r:1.4,len:6,pylon:'wing'},{x:-11.8,y:-2.9,z:-5.5,r:1.4,len:6,pylon:'wing'},{x:20.5,y:-1.7,z:1.5,r:1.4,len:6,pylon:'wing'},{x:-20.5,y:-1.7,z:1.5,r:1.4,len:6,pylon:'wing'}],
+  gear:{y0:-2.5,nose:{z:-27,r:.6,two:true},main:{x:5.2,z:4,r:.8,two:true}},eye:[-.8,4.6,-28.6],lightSize:3.5}},
+{id:'a388',name:'Airbus A380-800',role:'Double-deck superjumbo · the biggest',
+ mass:390000,S:845,span:79.8,thrust:1244000,ab:0,CL0:0.25,CLa:5.6,stall:15,aoaLimit:13,CD0:0.021,K:0.04,gearCD:0.02,sbCD:0.03,
+ mcrit:0.85,waveK:4,maxG:2.5,pitchRate:5,rollRate:20,yawRate:4,yawStab:1.2,resp:1.5,gearH:6.0,tailStrike:11,maxSink:3.3,
+ flaps:[{n:'0',deg:0,cl:0,cd:0,vmax:999},{n:'1+F',deg:8,cl:.25,cd:.006,vmax:222},{n:'2',deg:17,cl:.45,cd:.015,vmax:220},{n:'3',deg:26,cl:.65,cd:.03,vmax:196},{n:'FULL',deg:33,cl:.85,cd:.05,vmax:182}],
+ toFlap:1,asiMax:400,vmo:340,mmo:0.89,gearTime:9,flapRate:3,
+ model:{color:'#f4f5f7',accent:'#1b2a6b',fus:{prof:[[0,36.4],[1.6,35.2],[2.7,33.2],[3.4,30.2],[3.6,26],[3.6,-22],[3.1,-28],[2.0,-33.5],[.7,-36.4]],xs:1,ys:1.33},
+  wings:[{root:17,tip:4.5,span:36,sweep:21,x0:3.4,z:-8,y:-3.3,dih:.1,thick:1.2,flaps:[.04,.55],ail:[.62,.88]}],
+  htail:{root:9,tip:3,span:14,sweep:9,x0:1.4,z:24.5,y:1.0,dih:.12,thick:.4},
+  vtails:[{root:13,tip:5,h:13.5,sweep:10.5,z:20,y:3.8,x:0,cant:0}],
+  windshield:{z:-33.6,y:1.8,w:2.2,h:.95,len:2.4},windows:{rows:[.6,3.3],rowZ:[[-31,25],[-30,23]],step:1},stripe:true,
+  pods:[{x:14.5,y:-3.6,z:-5,r:1.55,len:7,pylon:'wing'},{x:-14.5,y:-3.6,z:-5,r:1.55,len:7,pylon:'wing'},{x:25.5,y:-2.4,z:3,r:1.55,len:7,pylon:'wing'},{x:-25.5,y:-2.4,z:3,r:1.55,len:7,pylon:'wing'}],
+  gear:{y0:-3.6,nose:{z:-30,r:.65,two:true},main:{x:6,z:4,r:.85,two:true}},eye:[-.8,2.2,-34.2],lightSize:3.8}},
 ];
 for(const P of PLANES){
  P.W=P.mass*G; const st=P.stall*D2R;
@@ -361,7 +410,7 @@ function buildAirport(ap){
  const sp=new THREE.Group();sp.position.y=7.8;sp.add(sock);ws.add(sp);windsocks.push(sp);
  g.traverse(m=>{if(m.isMesh){m.castShadow=m!==rw;m.receiveShadow=true;}});
  // parked airliners
- for(let i=0;i<2;i++){const p=buildPlane(PLANES[3]);p.setGear(1);p.group.position.set(ap.x+330,ap.elev+PLANES[3].gearH,ap.z-140+i*170);p.group.rotation.y=Math.PI/2;scene.add(p.group);}
+ const parked=PLANES.filter(q=>q.model.windows);for(let i=0;i<3;i++){const PP=parked[(i+(ap.id==='B'?2:0))%parked.length];const p=buildPlane(PP);p.setGear(1);p.group.position.set(ap.x+300+PP.len*.1,ap.elev+PP.gearH,ap.z-260+i*200);p.group.rotation.y=Math.PI/2;scene.add(p.group);}
  // ---- lights
  const X=ap.x,Z=ap.z,E=ap.elev+.5,L=ap.len,Wd=ap.wid;
  for(let z=-L/2;z<=L/2;z+=60){const yel=z< -L/2+600;for(const s of [-1,1])addLight(X+s*(Wd/2+1.5),E,Z+z,yel?'#ffd27a':'#fff4dc',1.0,.12);}
@@ -527,7 +576,7 @@ function buildPlane(P){
  const add=(m,p=g,hide)=>{p.add(m);if(hide)parts.hide.push(m);return m;};
  const prof=md.fus.prof.map(([r,y])=>new THREE.Vector2(r,y));
  const fg=new THREE.LatheGeometry(prof,24);fg.rotateX(-Math.PI/2);fg.scale(md.fus.xs,md.fus.ys,1);
- add(new THREE.Mesh(fg,body),g,P.id==='b738'||P.id==='lj45');
+ add(new THREE.Mesh(fg,body),g,!!md.windows);
  const fusR=z=>{let best=0;for(let i=0;i<md.fus.prof.length-1;i++){const [r1,y1]=md.fus.prof[i],[r2,y2]=md.fus.prof[i+1];const y=-z;if(y<=y1&&y>=y2)best=r1+(r2-r1)*(y1-y)/(y1-y2);}return best;};
  const wingGeo=w=>{const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(w.span,-w.sweep);s.lineTo(w.span,-w.sweep-w.tip);s.lineTo(0,-w.root);s.closePath();
   const geo=new THREE.ExtrudeGeometry(s,{depth:w.thick,bevelEnabled:false});geo.translate(0,0,-w.thick/2);geo.rotateX(-Math.PI/2);return geo;};
@@ -539,7 +588,7 @@ function buildPlane(P){
   if(wi===0){parts.tips.push(new V3(side*(w.x0+w.span*Math.cos(w.dih)),w.y+w.span*Math.sin(w.dih),w.z+w.sweep+w.tip*.5));
    if(w.flaps)surf(w,side,w.flaps[0],w.flaps[1],.28,parts.flaps,body);if(w.ail)surf(w,side,w.ail[0],w.ail[1],.25,parts.ails,body);}}});
  const h=md.htail;const hp=new THREE.Group();hp.position.set(0,h.y,h.z+h.root*.45);g.add(hp);parts.elev=hp;
- for(const side of [1,-1]){const m=new THREE.Mesh(wingGeo(h),P.id==='b738'?body:acc);m.position.set(side*h.x0,0,-h.root*.45);m.rotation.z=side*h.dih;if(side<0)m.scale.x=-1;hp.add(m);}
+ for(const side of [1,-1]){const m=new THREE.Mesh(wingGeo(h),md.windows?body:acc);m.position.set(side*h.x0,0,-h.root*.45);m.rotation.z=side*h.dih;if(side<0)m.scale.x=-1;hp.add(m);}
  for(const v of md.vtails){const s=new THREE.Shape();s.moveTo(0,0);s.lineTo(-v.sweep,v.h);s.lineTo(-v.sweep-v.tip,v.h);s.lineTo(-v.root,0);s.closePath();
   const geo=new THREE.ExtrudeGeometry(s,{depth:.16,bevelEnabled:false});geo.translate(0,0,-.08);geo.rotateY(Math.PI/2);
   const fin=new THREE.Group();fin.position.set(v.x,v.y,v.z);fin.rotation.z=-Math.sign(v.x)*v.cant;g.add(fin);fin.add(new THREE.Mesh(geo,acc));
@@ -547,10 +596,13 @@ function buildPlane(P){
   rp.add(new THREE.Mesh(new THREE.BoxGeometry(.14,v.h*.75,rc).translate(0,0,rc/2),acc));parts.rudders.push(rp);}
  if(md.canopy){const c=md.canopy;const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),glass);m.scale.set(c.w,c.h,c.len/2);m.position.set(0,c.y,c.z);add(m,g,true);}
  if(md.windshield){const c=md.windshield;const m=new THREE.Mesh(new THREE.SphereGeometry(1,20,10,0,TAU,0,Math.PI/2),dark);m.scale.set(c.w,c.h,c.len);m.position.set(0,c.y,c.z);add(m,g,true);}
- if(md.windows){const W=md.windows,r=fusR(0)*md.fus.xs;const zs=[];for(let z=W.z0;z<=W.z1;z+=W.step)zs.push(z);
-  const im=new THREE.InstancedMesh(new THREE.BoxGeometry(.06,W.big?.42:.32,W.big?.5:.24),dark,zs.length*2);const m4=new THREE.Matrix4();let k=0;
-  for(const z of zs)for(const s of [-1,1])im.setMatrixAt(k++,m4.makeTranslation(s*(r+.005),W.y,z));add(im,g,true);
-  if(P.id==='b738'){const stripe=new THREE.Mesh(new THREE.CylinderGeometry(r*1.003,r*1.003,28,24,1,true,Math.PI*.62,Math.PI*.76).rotateX(Math.PI/2),acc);stripe.scale.y=md.fus.ys;stripe.position.z=-1;add(stripe,g,true);}}
+ if(md.hump){const c=md.hump;const m=new THREE.Mesh(new THREE.SphereGeometry(1,24,14),body);m.scale.set(c.w,c.h,c.len);m.position.set(0,c.y,-c.z);add(m,g,true);}
+ if(md.windows){const W=md.windows,r=fusR(0)*md.fus.xs;const rows=W.rows||[W.y],rz=W.rowZ||[[W.z0,W.z1]];const pts=[];
+  rows.forEach((y,ri)=>{const ry=y/(fusR(0)*md.fus.ys);const rr=r*Math.sqrt(Math.max(0,1-ry*ry))+(md.hump&&ri>0?0:0);
+   const rad=md.hump&&ri>0?md.hump.w*Math.sqrt(Math.max(0,1-((y-md.hump.y)/md.hump.h)**2)):rr;for(let z=rz[ri][0];z<=rz[ri][1];z+=W.step)for(const s of [-1,1])pts.push([s*(rad+.01),y,z]);});
+  const im=new THREE.InstancedMesh(new THREE.BoxGeometry(.06,W.big?.42:.32,W.big?.5:.24),dark,pts.length);const m4=new THREE.Matrix4();
+  pts.forEach((p,i)=>im.setMatrixAt(i,m4.makeTranslation(p[0],p[1],p[2])));add(im,g,true);
+  if(md.stripe||P.id==='b738'){const sl=Math.abs(rz[0][1]-rz[0][0])+6,rr0=fusR(0)*md.fus.xs;for(const sd of [-1,1]){const cl=new THREE.Mesh(new THREE.BoxGeometry(.05,rr0*.12,sl),acc);cl.position.set(sd*(rr0+.012),rows[0]-rr0*.16,(rz[0][0]+rz[0][1])/2);add(cl,g,true);}}}
  if(md.belly){const b=md.belly;const m=new THREE.Mesh(new THREE.BoxGeometry(b.w,b.h,b.len),body);m.position.set(0,b.y,b.z);add(m);
   const lip=new THREE.Mesh(new THREE.PlaneGeometry(b.w*.9,b.h*.8).rotateY(Math.PI),dark);lip.position.set(0,b.y,b.z-b.len/2-.01);add(lip);}
  if(md.sideIntakes){const b=md.sideIntakes;for(const s of [1,-1]){const m=new THREE.Mesh(new THREE.BoxGeometry(b.w,b.h,b.len),body);m.position.set(s*b.x,b.y,b.z);add(m);}}
@@ -561,7 +613,7 @@ function buildPlane(P){
   const fo=new THREE.Mesh(new THREE.ConeGeometry(n.r*.78,6,16,1,true).translate(0,3,0).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0xff8a2a,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
   const fi=new THREE.Mesh(new THREE.ConeGeometry(n.r*.5,3,16,1,true).translate(0,1.5,0).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0x6fa8ff,transparent:true,opacity:.6,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
   fl.add(fo,fi);fl.visible=false;parts.flames.push(fl);}
- for(const p of md.pods||[]){const m=new THREE.Mesh(new THREE.CylinderGeometry(p.r*.85,p.r,p.len,20).rotateX(Math.PI/2),P.id==='b738'?mat('#c7ccd2',{metalness:.5,roughness:.35}):body);m.position.set(p.x,p.y,p.z);add(m);
+ for(const p of md.pods||[]){const m=new THREE.Mesh(new THREE.CylinderGeometry(p.r*.85,p.r,p.len,20).rotateX(Math.PI/2),md.pods.length&&md.windows&&p.pylon==='wing'?mat('#c7ccd2',{metalness:.5,roughness:.35}):body);m.position.set(p.x,p.y,p.z);add(m);
   const lip=new THREE.Mesh(new THREE.CircleGeometry(p.r*.88,20).rotateY(Math.PI),dark);lip.position.set(p.x,p.y,p.z-p.len/2-.01);add(lip);
   const fan=new THREE.Mesh(new THREE.CircleGeometry(p.r*.3,12).rotateY(Math.PI),metal);fan.position.set(p.x,p.y,p.z-p.len/2+.05);add(fan);
   if(p.pylon==='wing'){const py=new THREE.Mesh(new THREE.BoxGeometry(.3,1.1,2.8),body);py.position.set(p.x,p.y+p.r+.25,p.z+1.4);add(py);}
@@ -1141,7 +1193,7 @@ setTimeout(()=>{
  openMenu(false);
  window.__vf={S,settings,resetFlight,closeMenu,IN,keys,get camMode(){return camMode},set camMode(v){camMode=v},renderer,scene};
  const qs=new URLSearchParams(location.search);
- if(qs.has('auto')){for(const k of ['plane','weather','time','start'])if(qs.get(k))settings[k]=qs.get(k);if(qs.has('cam'))camMode=+qs.get('cam');document.getElementById('flyBtn').click();if(qs.has('thr'))S.thr=+qs.get('thr');}
+ if(qs.has('auto')){for(const k of ['plane','weather','time','start'])if(qs.get(k))settings[k]=qs.get(k);if(qs.has('cam'))camMode=+qs.get('cam');document.getElementById('flyBtn').click();if(qs.has('thr'))S.thr=+qs.get('thr');if(qs.has('yaw')){orbit.yaw=+qs.get('yaw');orbit.pitch=+(qs.get('pitch')||0);orbit.dist=+(qs.get('dist')||1);orbit.lastDrag=1e12;}if(qs.has('clean')){msgs.length=0;showInst=!qs.has('noinst');}}
  requestAnimationFrame(frame);
 },30);
 </script>
