@@ -61,6 +61,7 @@ details summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:13px}
     <label class="inline">Start <select id="startSel"><option value="takeoff">Runway 36, Hillcrest (takeoff)</option><option value="approach">6 km final, Lakeside (landing practice)</option><option value="air">In the air, 900 m</option></select></label>
     <label class="inline"><input id="invertChk" type="checkbox"> Invert pitch keys (W / ↑ = nose up)</label>
     <label class="inline"><input id="shadowChk" type="checkbox" checked> Shadows</label>
+    <label class="inline">Graphics <select id="gfxSel"><option value="auto">Auto (keeps FPS smooth)</option><option value="0">Potato</option><option value="1">Low</option><option value="2">Medium</option><option value="3">High</option><option value="4">Ultra</option></select></label>
    </div>
   </div>
   <details><summary>Controls</summary><div class="keys" id="keysList"></div></details>
@@ -256,8 +257,18 @@ function nearAirport(x,z,m){for(const ap of AIRPORTS){if(x>ap.x-350-m&&x<ap.x+75
 
 // ============================================================ renderer / scene
 const canvas=document.getElementById('gl');
-const renderer=new THREE.WebGLRenderer({canvas,antialias:true,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const GPU=(()=>{try{const c=document.createElement('canvas');const gl=c.getContext('webgl2')||c.getContext('webgl');const e=gl.getExtension('WEBGL_debug_renderer_info');const r=e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);const lc=gl.getExtension('WEBGL_lose_context');if(lc)lc.loseContext();return String(r);}catch(e){return '';}})();
+const QL=[{n:'Potato',pr:.5,sh:0,cl:.25,tr:.15,far:35000,spots:1,hud:2,fx:150,pc:.3},
+ {n:'Low',pr:.7,sh:0,cl:.45,tr:.35,far:55000,spots:1,hud:2,fx:250,pc:.5},
+ {n:'Medium',pr:1,sh:1024,cl:.7,tr:.65,far:100000,spots:2,hud:1,fx:450,pc:.8},
+ {n:'High',pr:1.5,sh:2048,cl:1,tr:1,far:160000,spots:5,hud:1,fx:700,pc:1},
+ {n:'Ultra',pr:2,sh:2048,cl:1,tr:1,far:160000,spots:5,hud:1,fx:700,pc:1}];
+const GFX_NAMES={auto:'Auto',0:'Potato',1:'Low',2:'Medium',3:'High',4:'Ultra'};
+let qLevel=/swiftshader|llvmpipe|softpipe|software/i.test(GPU)?0:/intel|uhd|iris|hd graphics|mali|adreno|powervr|videocore|radeon\(tm\) graphics|vega \d+ graphics/i.test(GPU)?1:3;
+if((navigator.hardwareConcurrency||8)<=4)qLevel=Math.min(qLevel,1);
+{let g='auto';try{g=JSON.parse(localStorage.getItem('vibeflight')||'{}').gfx||'auto';}catch(e){}if(g!=='auto')qLevel=+g;}
+const renderer=new THREE.WebGLRenderer({canvas,antialias:qLevel>=3,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,QL[qLevel].pr));
 renderer.setSize(innerWidth,innerHeight);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
@@ -410,7 +421,7 @@ function buildAirport(ap){
  const sp=new THREE.Group();sp.position.y=7.8;sp.add(sock);ws.add(sp);windsocks.push(sp);
  g.traverse(m=>{if(m.isMesh){m.castShadow=m!==rw;m.receiveShadow=true;}});
  // parked airliners
- const parked=PLANES.filter(q=>q.model.windows);for(let i=0;i<3;i++){const PP=parked[(i+(ap.id==='B'?2:0))%parked.length];const p=buildPlane(PP);p.setGear(1);p.group.position.set(ap.x+300+PP.len*.1,ap.elev+PP.gearH,ap.z-260+i*200);p.group.rotation.y=Math.PI/2;scene.add(p.group);}
+ const parked=PLANES.filter(q=>q.model.windows);for(let i=0;i<3;i++){const PP=parked[(i+(ap.id==='B'?2:0))%parked.length];const p=buildPlane(PP,true);p.setGear(1);p.group.position.set(ap.x+300+PP.len*.1,ap.elev+PP.gearH,ap.z-260+i*200);p.group.rotation.y=Math.PI/2;scene.add(p.group);}
  // ---- lights
  const X=ap.x,Z=ap.z,E=ap.elev+.5,L=ap.len,Wd=ap.wid;
  for(let z=-L/2;z<=L/2;z+=60){const yel=z< -L/2+600;for(const s of [-1,1])addLight(X+s*(Wd/2+1.5),E,Z+z,yel?'#ffd27a':'#fff4dc',1.0,.12);}
@@ -474,7 +485,7 @@ function buildHouses(){
  pts.forEach((p,i)=>{const y=groundH(p[0],p[1]);const w=8+rnd()*6,d=9+rnd()*7,h=5+rnd()*3;q.setFromAxisAngle(new V3(0,1,0),rnd()*Math.PI);
   m4.compose(new V3(p[0],y-.5,p[1]),q,new V3(w,h+.5,d));walls.setMatrixAt(i,m4);walls.setColorAt(i,c.set(wp[i%wp.length]));
   m4.compose(new V3(p[0],y+h,p[1]),q,new V3(w*1.1,3+rnd()*1.5,d*1.1));roofs.setMatrixAt(i,m4);roofs.setColorAt(i,c.set(rp[i%rp.length]));});
- for(const o of [walls,roofs]){o.castShadow=o.receiveShadow=true;scene.add(o);}
+ for(const o of [walls,roofs]){o.castShadow=o.receiveShadow=true;scene.add(o);o.userData.full=pts.length;o.userData.lod=.5;lodMeshes.push(o);}
 }
 function buildTrees(){
  const cone=[],ball=[];setSeed(2024);
@@ -485,7 +496,7 @@ function buildTrees(){
   const s=groundH(x+15,z)-h,s2=groundH(x,z+15)-h;if(Math.abs(s)>8||Math.abs(s2)>8)continue;
   (h>350||rnd()<.45?cone:ball).push([x,h,z]);}
  const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),c=new THREE.Color();
- const mk=(geo,arr,cols,sc)=>{const im=new THREE.InstancedMesh(geo,mat('#ffffff',{roughness:.9,metalness:0}),arr.length);
+ const mk=(geo,arr,cols,sc)=>{const im=new THREE.InstancedMesh(geo,mat('#ffffff',{roughness:.9,metalness:0}),arr.length);im.userData.full=arr.length;lodMeshes.push(im);
   arr.forEach((p,i)=>{const k=.7+rnd()*.8;m4.compose(new V3(p[0],p[1]-.5,p[2]),q,new V3(sc[0]*k,sc[1]*k,sc[0]*k));im.setMatrixAt(i,m4);im.setColorAt(i,c.set(cols[(rnd()*cols.length)|0]));});
   im.castShadow=true;im.receiveShadow=true;scene.add(im);};
  mk(new THREE.ConeGeometry(1,1,7).translate(0,.5,0),cone,['#25452a','#2e5131','#1f3d26','#355a33'],[3.4,14]);
@@ -555,7 +566,7 @@ function genClouds(w){
    const s=size*(.6+rnd()*.8);cScl[n*2]=s*1.5;cScl[n*2+1]=s;cShade[n]=(cOff[n*3+1]-base)/thick;n++;}}};
  if(w.cover>0){if(w.cover>=1){layer(420,w.base,260,650,[14,20],320);layer(160,w.base+900,200,700,[6,10],360);}
   else layer(Math.round(w.cover*320),w.base,w.cover>.5?320:220,420,[8,16],200);}
- cloudGeo.instanceCount=n;for(const k of ['iOff','iScl','iShade'])cloudGeo.attributes[k].needsUpdate=true;
+ cloudN=n;cloudGeo.instanceCount=Math.floor(n*QL[qLevel].cl);for(const k of ['iOff','iScl','iShade'])cloudGeo.attributes[k].needsUpdate=true;
 }
 
 // ============================================================ precipitation
@@ -567,7 +578,7 @@ const snow=new THREE.Points(snowGeo,new THREE.PointsMaterial({color:0xffffff,siz
 const drops=new Float32Array(PREC_N*3);setSeed(3);for(let i=0;i<drops.length;i++)drops[i]=rnd();
 
 // ============================================================ aircraft model
-function buildPlane(P){
+function buildPlane(P,isStatic=false){
  const md=P.model,g=new THREE.Group();
  const body=mat(md.color,{side:THREE.DoubleSide,roughness:.45,metalness:.35}),acc=mat(md.accent,{side:THREE.DoubleSide,roughness:.5,metalness:.3});
  const dark=mat('#25272b',{roughness:.6}),metal=mat('#5a5d62',{metalness:.8,roughness:.35});
@@ -640,6 +651,7 @@ function buildPlane(P){
  L.turn=[1,-1].map(sd=>mkSpot(L.land.position,new V3(sd*45,-P.gearH,gm.nose.z-60),.3,.5,500));
  parts.lights=L;
  g.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;}});
+ if(isStatic){const rm=[];g.traverse(o=>{if(o.isSpotLight)rm.push(o,o.target);if(o.isSprite)rm.push(o);});rm.forEach(o=>o.parent&&o.parent.remove(o));}
  return {group:g,parts,
   setGear(p,br){for(const l of parts.gear){l.pv.visible=p>.04&&!(br&&(l.nose?br.N:(l.sx>0?br.R:br.L)));if(l.nose)l.pv.rotation.x=(1-p)*Math.PI/2;else l.pv.rotation.z=-l.sx*(1-p)*Math.PI/2;}},
   setSurfaces(flapDeg,roll,pitch,yaw){for(const f of parts.flaps)f.h.rotation.x=flapDeg*D2R*.9;for(const a of parts.ails)a.h.rotation.x=-a.side*roll*.35;
@@ -662,7 +674,7 @@ const TIMES={
  sunset:{name:'Sunset',el:4,az:265,zen:'#32507c',hor:'#ff9550',sun:'#ff8c4a',si:1.4,hi:.45},
  night:{name:'Night',el:35,az:200,zen:'#02040c',hor:'#0b1528',sun:'#8fa8d8',si:.12,hi:.07,night:true},
 };
-const settings={plane:'f16',weather:'scattered',time:'noon',windDir:20,windSpd:6,start:'takeoff',invert:false,shadows:true};
+const settings={plane:'f16',weather:'scattered',time:'noon',windDir:20,windSpd:6,start:'takeoff',invert:false,shadows:true,gfx:'auto'};
 try{Object.assign(settings,JSON.parse(localStorage.getItem('vibeflight')||'{}'));}catch(e){}
 const env={wind:new V3(),turb:.2,fogBase:2e-5,night:0,precip:null,lightning:false,base:1000,fogCol:new THREE.Color(),cover:0};
 const sunDir=new V3();
@@ -690,7 +702,7 @@ function applyEnv(){
  cloudMat.uniforms.fogCol.value.copy(hor);
  genClouds({cover:w.cover,base:w.base,seed:settings.weather.length*101});
  rain.visible=w.precip==='rain';snow.visible=w.precip==='snow';rain.material.opacity=w.heavy?.55:.4;
- renderer.shadowMap.enabled=settings.shadows;sun.castShadow=settings.shadows&&t.el>2&&!t.night&&w.dim<.7;
+ const shOK=settings.shadows&&QL[qLevel].sh>0;renderer.shadowMap.enabled=shOK;sun.castShadow=shOK&&t.el>2&&!t.night&&w.dim<.7;
  scene.traverse(o=>{if(o.material&&o.material.needsUpdate!==undefined&&o.isMesh)o.material.needsUpdate=true;});
 }
 
@@ -952,7 +964,7 @@ const FXT={smoke:{tex:()=>puffTex,blend:THREE.NormalBlending,col:0x2e2e2e,life:4
  dust:{tex:()=>puffTex,blend:THREE.NormalBlending,col:0x9b8a6a,life:2.5,s0:2,s1:12,op:.55,up:1},
  spray:{tex:()=>puffTex,blend:THREE.NormalBlending,col:0xe8f2f8,life:1.6,s0:2,s1:10,op:.6,up:2}};
 function emit(type,pos,vel,scale=1){const T=FXT[type];const pool=FX.pools[type]||(FX.pools[type]=[]);let sp=pool.pop();
- if(!sp){if(FX.live.length>700)return;sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.tex(),color:T.col,blending:T.blend,transparent:true,depthWrite:false}));scene.add(sp);}
+ if(!sp){if(FX.live.length>QL[qLevel].fx)return;}if(FX.live.length>QL[qLevel].fx){if(sp)pool.push(sp);return;}if(!sp){sp=new THREE.Sprite(new THREE.SpriteMaterial({map:T.tex(),color:T.col,blending:T.blend,transparent:true,depthWrite:false}));scene.add(sp);}
  sp.visible=true;sp.position.copy(pos);FX.live.push({sp,type,vel:vel.clone(),t:0,life:T.life*(.7+Math.random()*.6),k:scale});}
 function emitRate(key,rate,dt,fn){FX.acc[key]=(FX.acc[key]||0)+rate*dt;while(FX.acc[key]>=1){FX.acc[key]-=1;fn();}}
 function clearFX(){for(const p of FX.live){p.sp.visible=false;FX.pools[p.type].push(p.sp);}FX.live.length=0;}
@@ -1080,9 +1092,10 @@ function updateVisuals(dt,t){
   const bc=S.lights.beacon&&(t%1.2)<.12;L.bcnT.visible=L.bcnB.visible=bc;
   const sp=S.lights.strobe&&((t%1.1)<.05||((t%1.1)>.15&&(t%1.1)<.2));L.strR.visible=L.strL.visible=sp;
   const landOn=S.lights.land&&(L.wingMount||S.gearPos>.9)&&!S.crashed,taxiOn=S.lights.taxi&&S.gearPos>.9&&!S.crashed;
+  {const ns=QL[qLevel].spots;L.landSpots.forEach((sp,i)=>sp.visible=i<(ns>=5?2:1));L.taxi.visible=ns>=2;for(const sp of L.turn)sp.visible=ns>=5;}
   for(const sp of L.landSpots)sp.intensity=landOn?(70+env.night*420):0;L.taxi.intensity=taxiOn?(20+env.night*140):0;for(const sp of L.turn)sp.intensity=taxiOn?(15+env.night*110):0;
   L.land.visible=taxiOn||(landOn&&!L.wingMount);L.land.material.opacity=.4+env.night*.6;for(const g of L.landGlow){g.visible=landOn;g.material.opacity=.4+env.night*.6;}}
- sky.position.copy(camera.position);stars.position.copy(camera.position);
+ sky.position.copy(camera.position);stars.position.copy(camera.position);{const k=Math.min(1,camera.far*.9/100000);sky.scale.setScalar(k);stars.scale.setScalar(k);}
  // shadow camera follows aircraft
  sun.position.copy(S.pos).addScaledVector(sunDir,2000);sun.target.position.copy(S.pos);sun.target.updateMatrixWorld();
  const r=Math.min(400,(P.len*1.15+6)*orbit.dist*2.5+40);Object.assign(sun.shadow.camera,{left:-r,right:r,top:r,bottom:-r});sun.shadow.camera.updateProjectionMatrix();
@@ -1091,7 +1104,7 @@ function updateVisuals(dt,t){
  for(const c of cloudClusters){const dy=cp.y-c[1];if(dy<-30||dy>c[4]+30)continue;const d=Math.hypot(cp.x-c[0],cp.z-c[2]);if(d<c[3]*.85){ic=Math.max(ic,1-d/(c[3]*.85));}}
  inCloud+=(Math.min(1,ic*2.2)-inCloud)*(1-Math.exp(-dt*3));
  const below=cp.y<env.base;
- scene.fog.density=env.fogBase*(env.precip&&below?1:(env.precip?.6:1))+inCloud*.0045;
+ scene.fog.density=Math.max(env.fogBase,1.7/QL[qLevel].far)*(env.precip&&below?1:(env.precip?.6:1))+inCloud*.0045;
  scene.fog.color.copy(env.fogCol).lerp(cloudMat.uniforms.lit.value,inCloud*.8);
  cloudMat.uniforms.fogD.value=env.fogBase;
  lightMat.uniforms.uTime.value=t;lightMat.uniforms.uFog.value=scene.fog.density;
@@ -1102,7 +1115,7 @@ function updateVisuals(dt,t){
  for(const w of windsocks){const wv=env.wind.clone().add(_turb);w.rotation.y=Math.atan2(-wv.z,wv.x);w.rotation.z=-(1-clamp(wv.length()/8,0,1))*1.2;}
  for(const ro of rotors)ro.rotation.z+=dt*(.4+env.wind.length()*.12);
  // precipitation
- if(env.precip){const fall=env.precip==='rain'?new V3(0,-11,0):new V3(0,-1.6,0);fall.add(env.wind);const rel=fall.clone().sub(S.vel);const span=env.precip==='rain'?70:45;const n=env.heavy?PREC_N:PREC_N*.6|0;
+ if(env.precip){const fall=env.precip==='rain'?new V3(0,-11,0):new V3(0,-1.6,0);fall.add(env.wind);const rel=fall.clone().sub(S.vel);const span=env.precip==='rain'?70:45;const n=(env.heavy?PREC_N:PREC_N*.6)*QL[qLevel].pc|0;
   const ox=cp.x-span/2,oy=cp.y-span/2,oz=cp.z-span/2;
   for(let i=0;i<PREC_N;i++){if(i>=n||!below){if(env.precip==='rain'){rainPos[i*6+1]=rainPos[i*6+4]=-1e6;}else snowPos[i*3+1]=-1e6;continue;}
    drops[i*3]+=fall.x*dt/span;drops[i*3+1]+=fall.y*dt/span;drops[i*3+2]+=fall.z*dt/span;
@@ -1120,7 +1133,7 @@ function updateVisuals(dt,t){
 
 // ============================================================ HUD & instruments (2D canvas)
 const hud=document.getElementById('hud'),H=hud.getContext('2d');
-function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();const d=Math.min(devicePixelRatio,2);hud.width=innerWidth*d;hud.height=innerHeight*d;H.setTransform(d,0,0,d,0,0);}
+function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();const d=Math.min(devicePixelRatio,QL[qLevel].pr>=1?2:1);hud.width=innerWidth*d;hud.height=innerHeight*d;H.setTransform(d,0,0,d,0,0);}
 addEventListener('resize',resize);
 const fmt=(n,d=0)=>n.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
 function bezel(x,y,r,label){H.save();H.translate(x,y);
@@ -1183,6 +1196,19 @@ function drawVSI(x,y,r,fpm){bezel(x,y,r,null);const A=v=>-Math.PI/2+clamp(v/6000
  needle(A(fpm),r*.86,r*.06);hub(r);H.restore();}
 function lamp(x,y,on,col,label,w=46){H.fillStyle=on?col:'#20242a';H.fillRect(x,y,w,16);H.strokeStyle='#3c424b';H.strokeRect(x+.5,y+.5,w-1,15);H.fillStyle=on?'#05080b':'#6b7480';H.font='700 10px system-ui';H.textAlign='center';H.textBaseline='middle';H.fillText(label,x+w/2,y+8.5);}
 let miniMap=null,mapMode=0;
+const lodMeshes=[];let cloudN=0;
+function applyQuality(){const q=QL[qLevel];
+ renderer.setPixelRatio(Math.min(devicePixelRatio,q.pr));resize();
+ if(q.sh&&sun.shadow.mapSize.x!==q.sh){sun.shadow.mapSize.set(q.sh,q.sh);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
+ const shOK=settings.shadows&&q.sh>0;if(renderer.shadowMap.enabled!==shOK){renderer.shadowMap.enabled=shOK;sun.castShadow=shOK&&sun.intensity>.5;scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}
+ camera.far=q.far;camera.updateProjectionMatrix();
+ for(const im of lodMeshes)im.count=Math.max(1,Math.floor(im.userData.full*Math.min(1,q.tr*(im.userData.lod?1/im.userData.lod:1))));
+ cloudGeo.instanceCount=Math.floor(cloudN*q.cl);}
+const FPS={acc:0,n:0,v:60,low:0,high:0,lastDown:-99,ceil:4};
+function autoQuality(t){if(settings.gfx!=='auto'||!started||paused||isUI())return;
+ if(FPS.v<38){FPS.low++;FPS.high=0;}else if(FPS.v>56){FPS.high++;FPS.low=0;}else{FPS.low=0;FPS.high=0;}
+ if(FPS.low>=2&&qLevel>0){qLevel--;FPS.low=0;FPS.lastDown=t;FPS.ceil=qLevel;applyQuality();msg('Graphics → '+QL[qLevel].n+' (auto, '+Math.round(FPS.v)+' fps)',2,'#9aa3ad');}
+ else if(FPS.high>=8&&qLevel<4&&(qLevel<FPS.ceil||t-FPS.lastDown>60)){qLevel++;FPS.high=0;applyQuality();msg('Graphics → '+QL[qLevel].n+' (auto)',2,'#9aa3ad');}}
 function nearestAp(){let b=null,bd=1e9;for(const ap of AIRPORTS){const d=Math.hypot(S.pos.x-ap.x,S.pos.z-ap.z);if(d<bd){bd=d;b=ap;}}return [b,bd];}
 function diagAirport(){const [ap,d]=nearestAp();if(mapMode===1)return null;if(mapMode===2)return ap;
  const agl=S.pos.y-Math.max(groundH(S.pos.x,S.pos.z),0);return (S.onGround&&d<3500)||(agl<60&&d<2600)?ap:null;}
@@ -1282,10 +1308,10 @@ function drawHUD(dt){
   const lines=[`DEST ${DEST.code} RWY 36`,`DIST ${(dist/1852).toFixed(1)} nm  BRG ${String(Math.round(brg)%360).padStart(3,'0')}`,`ETA  ${Math.floor(eta/60)}:${String(Math.floor(eta%60)).padStart(2,'0')}`,`Vr ${Math.round(P.vr/KT)}  Vref ${Math.round(P.vref/KT)} kt`,ils?`ILS  ${ils.gs>0?'high':'low'} ${Math.abs(ils.gs).toFixed(1)}°  ${ils.loc>0?'R':'L'} ${Math.abs(ils.loc).toFixed(1)}°`:'ILS  —'];
   lines.forEach((l,i)=>H.fillText(l,mx+8,my+ms+24+i*17));}
  // ---- top-left info
- if(!hideAll){H.fillStyle='rgba(12,14,18,.7)';H.fillRect(12,12,300,62);H.fillStyle='#e6edf3';H.font='700 13px system-ui';H.textAlign='left';H.fillText(P.name,22,31);
+ if(!hideAll){H.fillStyle='rgba(12,14,18,.7)';H.fillRect(12,12,300,79);H.fillStyle='#e6edf3';H.font='700 13px system-ui';H.textAlign='left';H.fillText(P.name,22,31);
  H.font='12px system-ui';H.fillStyle='#b7c2ce';const wdir=String(settings.windDir).padStart(3,'0');
  H.fillText(`${WEATHER[settings.weather].name} · ${TIMES[settings.time].name} · wind ${wdir}°/${settings.windSpd} kt`,22,49);
- H.fillText(`Time ${Math.floor(S.time/60)}:${String(Math.floor(S.time%60)).padStart(2,'0')} · cam ${CAM_NAMES[camMode]} (C) · F1 keys · Esc menu`,22,66);}
+ H.fillText(`Time ${Math.floor(S.time/60)}:${String(Math.floor(S.time%60)).padStart(2,'0')} · cam ${CAM_NAMES[camMode]} (C) · F1 keys · Esc menu`,22,66);H.fillStyle='#8b98a8';H.fillText(`${Math.round(FPS.v)} fps · graphics ${QL[qLevel].n}${settings.gfx==='auto'?' (auto)':''}`,22,83);}
  // ---- warnings
  const warns=[];if(!S.crashed&&!S.landed&&!S.ditched){
   if(S.stalled&&!S.onGround)warns.push('STALL');else if(!S.onGround&&S.alpha>P.stall*D2R*.85&&S.V>5)warns.push('STALL WARNING');
@@ -1309,18 +1335,19 @@ function cards(){const el=document.getElementById('planeCards');el.innerHTML='';
  d.innerHTML=`<b>${p.name}</b><small>${p.role}<br>Thrust ${Math.round(p.thrust/1000)}${p.ab?'/'+Math.round(p.ab/1000):''} kN · ${Math.round(p.mass/1000)} t<br>Vr ${Math.round(p.vr/KT)} kt · Vref ${Math.round(p.vref/KT)} kt</small>`;d.onclick=()=>{settings.plane=p.id;cards();};el.appendChild(d);}}
 const wd=document.getElementById('windDir'),wsp=document.getElementById('windSpd');
 function syncInputs(){wd.value=settings.windDir;wsp.value=settings.windSpd;document.getElementById('windDirV').textContent=String(settings.windDir).padStart(3,'0')+'°';document.getElementById('windSpdV').textContent=settings.windSpd+' kt';
- document.getElementById('startSel').value=settings.start;document.getElementById('invertChk').checked=settings.invert;document.getElementById('shadowChk').checked=settings.shadows;}
+ document.getElementById('startSel').value=settings.start;document.getElementById('invertChk').checked=settings.invert;document.getElementById('shadowChk').checked=settings.shadows;document.getElementById('gfxSel').value=settings.gfx;}
+document.getElementById('gfxSel').onchange=e=>{settings.gfx=e.target.value;if(settings.gfx!=='auto')qLevel=+settings.gfx;FPS.ceil=4;};
 wd.oninput=()=>{settings.windDir=+wd.value;syncInputs();};wsp.oninput=()=>{settings.windSpd=+wsp.value;syncInputs();};
 document.getElementById('startSel').onchange=e=>settings.start=e.target.value;document.getElementById('invertChk').onchange=e=>settings.invert=e.target.checked;document.getElementById('shadowChk').onchange=e=>settings.shadows=e.target.checked;
 function openMenu(inFlight){paused=true;keys.clear();cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();
  document.getElementById('resumeBtn').style.display=inFlight&&started&&!S.crashed?'':'none';document.getElementById('menu').style.display='flex';}
-function closeMenu(){document.getElementById('menu').style.display='none';try{localStorage.setItem('vibeflight',JSON.stringify(settings));}catch(e){}applyEnv();Snd.init();paused=false;}
+function closeMenu(){document.getElementById('menu').style.display='none';try{localStorage.setItem('vibeflight',JSON.stringify(settings));}catch(e){}applyEnv();applyQuality();Snd.init();paused=false;}
 document.getElementById('flyBtn').onclick=()=>{closeMenu();msgs.length=0;resetFlight();started=true;};
 document.getElementById('resumeBtn').onclick=()=>{const keepPlane=P.id;closeMenu();if(settings.plane!==keepPlane){msgs.length=0;resetFlight();}};
 document.getElementById('menu').addEventListener('keydown',e=>{if(e.code==='Escape'&&started&&!S.crashed){document.getElementById('resumeBtn').click();}});
 
 // ============================================================ main loop
-let papiPoints=null,last=performance.now(),acc=0;
+let papiPoints=null,last=performance.now(),acc=0,hudDt=0,hudFrame=0;
 function frame(now){
  requestAnimationFrame(frame);
  const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
@@ -1330,7 +1357,8 @@ function frame(now){
  }
  updateVisuals(dt,t);updateFX(dt);updateCamera(dt);
  renderer.render(scene,camera);
- drawHUD(dt);
+ FPS.acc+=dt;FPS.n++;if(FPS.acc>=1){FPS.v=FPS.n/FPS.acc;FPS.acc=0;FPS.n=0;autoQuality(t);}
+ hudDt+=dt;if(++hudFrame%QL[qLevel].hud===0){drawHUD(hudDt);hudDt=0;}
  Snd.update(S.n1*(1-S.dmg.eng),S.ab,S.V,S.warn&&!S.crashed&&!paused,Math.max((env.precip==='rain'&&camera.position.y<env.base)?(env.heavy?1:.6):0,Math.min(1.5,S.scrape/25)),camMode===1,S.onGround?Math.min(1,Math.hypot(S.vel.x,S.vel.z)/60)*(S.belly?1.6:.6)*(onPaved(S.pos.x,S.pos.z)?1:1.8):0);
 }
 
@@ -1342,7 +1370,7 @@ setTimeout(()=>{
  buildCity();buildHouses();buildTrees();buildRoad();buildLandmarks();
  pointsFrom(LP);papiPoints=buildPapiPoints();
  buildMiniMap();
- applyEnv();resize();
+ applyEnv();resize();applyQuality();
  P=PLANES.find(p=>p.id===settings.plane)||PLANES[0];resetFlight();msgs.length=0;
  camMode=0;updateCamera(1);
  loadingEl.style.display='none';
