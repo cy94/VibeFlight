@@ -632,7 +632,12 @@ function buildPlane(P){
  const tailZ=Math.max(...md.fus.prof.map(p=>-p[1]));L.tail.position.set(0,0,tailZ+.2);
  const topR=fusR(0)*md.fus.ys;L.bcnT.position.set(0,topR+.15,0);L.bcnB.position.set(0,-topR-.15,0);
  L.land.position.set(0,gm.y0-.3,gm.nose.z-.4);
- const spot=new THREE.SpotLight(0xfff3e0,0,2600,.32,.45,1);spot.position.copy(L.land.position);spot.target.position.set(0,gm.y0-28,gm.nose.z-400);g.add(spot,spot.target);L.spot=spot;
+ const mkSpot=(pos,tgt,ang,pen,range)=>{const sp=new THREE.SpotLight(0xfff3e0,0,range,ang,pen,1);sp.position.copy(pos);sp.target.position.copy(tgt);g.add(sp,sp.target);return sp;};
+ L.wingMount=!!md.windows;L.landSpots=[];L.landGlow=[];
+ if(L.wingMount){const w0=md.wings[0];for(const sd of [1,-1]){const p=new V3(sd*(w0.x0+.8),w0.y+.1,w0.z+.4);L.landSpots.push(mkSpot(p,p.clone().add(new V3(-sd*3,-P.gearH-14,-420)),.2,.35,3200));L.landGlow.push(spr(0xfff6e0,ls*2));L.landGlow[L.landGlow.length-1].position.copy(p);}}
+ else{L.landSpots.push(mkSpot(L.land.position,new V3(0,-P.gearH-14,gm.nose.z-420),.2,.35,3200));}
+ L.taxi=mkSpot(L.land.position,new V3(0,-P.gearH,gm.nose.z-55),.62,.55,450);
+ L.turn=[1,-1].map(sd=>mkSpot(L.land.position,new V3(sd*45,-P.gearH,gm.nose.z-60),.3,.5,500));
  parts.lights=L;
  g.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;}});
  return {group:g,parts,
@@ -725,7 +730,7 @@ const Snd={ctx:null,muted:false,init(){if(this.ctx){this.ctx.resume();return;}tr
 // ============================================================ simulation state
 let P=PLANES[0],plane=null;
 const S={pos:new V3(),vel:new V3(),q:new THREE.Quaternion(),p:0,qr:0,r:0,thr:0,n1:0,ab:0,gearDown:true,gearPos:1,flapIdx:0,flapDeg:0,brake:false,
- lights:{nav:true,beacon:true,strobe:true,land:true},onGround:true,crashed:false,landed:false,alpha:0,beta:0,V:0,M:0,gLoad:1,sf:new V3(),
+ lights:{nav:true,beacon:true,strobe:true,land:true,taxi:true},onGround:true,crashed:false,landed:false,alpha:0,beta:0,V:0,M:0,gLoad:1,sf:new V3(),
  stalled:false,wingDrop:0,time:0,airT:0,shake:0,rev:0,spoilers:false,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,timerOn:false,airborne:false,touch:null,turnRate:0,lastHdg:0,crashT:0};
 const IN={pitch:0,roll:0,yaw:0};
 const keys=new Set();
@@ -743,7 +748,7 @@ function resetFlight(){
  P=PLANES.find(p=>p.id===settings.plane)||PLANES[0];
  if(plane)scene.remove(plane.group);plane=buildPlane(P);scene.add(plane.group);
  if(fireball){scene.remove(fireball);fireball=null;}
- clearFX();Object.assign(S,{bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
+ clearFX();Object.assign(S,{slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
  IN.pitch=IN.roll=IN.yaw=0;orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;
  const A=AIRPORTS[0],B=DEST;
  if(settings.start==='takeoff'){
@@ -856,7 +861,7 @@ function physicsStep(dt){
  const bellyH=P.model.fus.prof.reduce((m,p)=>Math.max(m,p[0]),0)*P.model.fus.ys*.92;
  const mainsOK=!D.gearL&&!D.gearR,gearUp=s.gearPos<.98,onGear=!gearUp&&(!D.gearL||!D.gearR),oneMain=onGear&&(D.gearL!==D.gearR);
  const bottom=water?bellyH*.45-s.sinkD:(!gearUp&&mainsOK?P.gearH:(onGear?(P.gearH+bellyH)/2:bellyH));
- const springy=!water&&!gearUp&&mainsOK&&!s.crashed,sDef=P.gearH*.06+.08,stroke=P.gearH*.14+.15,reach=springy?bottom+sDef:bottom;
+ const springy=!water&&!gearUp&&mainsOK&&!s.crashed,sDef=P.gearH*.07+.1,stroke=P.gearH*.14+.15,reach=springy?bottom+sDef:bottom;
  s.scrape=0;if(!s.onGround)s.airT+=dt;
  if(s.pos.y-surf<reach){
   const e=new THREE.Euler().setFromQuaternion(s.q,'YXZ');const pitch=e.x*R2D,roll=-e.z*R2D;
@@ -890,10 +895,13 @@ function physicsStep(dt){
      const f=s.touch.fpm;const q=f<150?'Butter!':f<300?'Smooth':f<500?'Firm':'Hard';msg(`Touchdown ${f} ft/min — ${q}${rw?'':' (off runway!)'}`,5,f<500?'#7dff9a':'#ffb020');}
    }
   }
-  if(impact&&!water){s.shake=Math.max(s.shake,clamp(vn*.12,.06,1));Snd.chirp(clamp(vn/3,.25,1));}
+  if(impact&&!water){s.shake=Math.max(s.shake,clamp(vn*.25,.18,1.2));Snd.chirp(clamp(vn/3,.25,1));}
   s.onGround=true;s.airT=0;let Nspring=-1;
   if(springy){const om=Math.sqrt(G/sDef),c=surf+reach-s.pos.y;let vy=s.vel.dot(n);
-   const a=Math.max(0,om*om*c-2*(vy>0?.9:.45)*om*vy);s.vel.addScaledVector(n,a*dt);Nspring=a*P.mass;
+   const spd2=Math.hypot(s.vel.x,s.vel.z),pv=onPaved(s.pos.x,s.pos.z);
+   let road=(Math.random()-.5)*2*Math.min(1,spd2/45)*(pv?3:9);
+   s.slab=(s.slab||0)+spd2*dt;if(pv&&s.slab>17){s.slab=0;road+=Math.min(1,spd2/35)*55;}
+   const a=Math.max(0,om*om*c-2*(vy>0?.5:.28)*om*vy+road);s.vel.addScaledVector(n,a*dt);Nspring=a*P.mass;
    if(c>stroke){s.pos.y=surf+reach-stroke;vy=s.vel.dot(n);if(vy<0){s.vel.addScaledVector(n,-vy);s.shake=Math.max(s.shake,.7);}}}
   else{s.pos.y=surf+bottom;const vnn=s.vel.dot(n);if(vnn<0)s.vel.addScaledVector(n,-vnn*(water?1:1.12));}
   const fh=_tmp.set(_f.x,0,_f.z);if(fh.lengthSq()<1e-6)fh.set(0,0,-1);fh.normalize();const rh=new V3(-fh.z,0,fh.x);
@@ -914,7 +922,7 @@ function physicsStep(dt){
   s.vel.set(fh.x*vF+rh.x*vR,s.vel.y,fh.z*vF+rh.z*vR);
   e.setFromQuaternion(s.q,'YXZ');
   const lean=oneMain?(D.gearL?-7:7):0;e.z=lerp(e.z,-lean*D2R,1-Math.exp(-dt*4));
-  const pmin=(D.gearN||!rolling)?-2.5:0;if(e.x<pmin*D2R){e.x=pmin*D2R;if(s.qr<0)s.qr=0;}
+  const pmin=(D.gearN||!rolling)?-2.5:0;if(e.x<pmin*D2R){if(s.noseUp&&rolling&&Math.hypot(s.vel.x,s.vel.z)>12){s.shake=Math.max(s.shake,.35+Math.min(.5,-s.qr*4));Snd.clunk(.9);}s.noseUp=false;e.x=pmin*D2R;if(s.qr<0)s.qr=0;}else if(e.x>1.2*D2R)s.noseUp=true;
   if(!rolling)e.x=lerp(e.x,Math.max(pmin*D2R,0),1-Math.exp(-dt*1.5));
   if(e.x>(P.tailStrike+1)*D2R){e.x=(P.tailStrike+1)*D2R;if(s.qr>0)s.qr=0;if(!s.crashed){D.tail=Math.min(1,D.tail+dt*.3);if(!s.tsMsg){msg('Tail scraping!',2,'#ff5a4d');s.tsMsg=1;}}}else s.tsMsg=0;
   s.q.setFromEuler(e);s.p=0;
@@ -976,7 +984,8 @@ addEventListener('keydown',e=>{
  switch(e.code){
   case 'KeyG':if(S.onGround&&S.gearDown){msg('Gear can\'t retract on the ground',2);break;}S.gearDown=!S.gearDown;msg('Gear '+(S.gearDown?'DOWN':'UP'),1.5);Snd.motor(P.gearTime);break;
   case 'KeyV':case 'BracketRight':case 'BracketLeft':{const up=e.shiftKey||e.code==='BracketLeft';S.flapIdx=clamp(S.flapIdx+(up?-1:1),0,P.flaps.length-1);msg('Flaps '+P.flaps[S.flapIdx].n,1.5);break;}
-  case 'KeyL':S.lights.land=!S.lights.land;msg('Landing light '+(S.lights.land?'ON':'OFF'),1.5);break;
+  case 'KeyL':S.lights.land=!S.lights.land;msg('Landing lights '+(S.lights.land?'ON':'OFF'),1.5);break;
+  case 'KeyT':S.lights.taxi=!S.lights.taxi;msg('Taxi + runway turnoff lights '+(S.lights.taxi?'ON':'OFF'),1.5);break;
   case 'KeyN':S.lights.nav=!S.lights.nav;S.lights.beacon=S.lights.nav;msg('Nav & beacon lights '+(S.lights.nav?'ON':'OFF'),1.5);break;
   case 'KeyO':S.lights.strobe=!S.lights.strobe;msg('Strobes '+(S.lights.strobe?'ON':'OFF'),1.5);break;
   case 'KeyC':camMode=(camMode+(e.shiftKey?3:1))%4;orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;flyby.t=99;msg('Camera: '+CAM_NAMES[camMode],1.2);break;
@@ -1054,9 +1063,9 @@ function updateCamera(dt){
  }
  if(camMode!==1){const gy=Math.max(groundH(camera.position.x,camera.position.z),0)+1.2;if(camera.position.y<gy)camera.position.y=gy;}
  {const gs=Math.hypot(S.vel.x,S.vel.z);S.shake*=Math.exp(-dt*3.5);
-  const rumble=S.onGround?Math.min(1,gs/70)*(onPaved(S.pos.x,S.pos.z)?.05:.2)*(S.belly?4:1):Math.min(.08,env.turb*.04*Math.min(1,S.V/80));
-  const A=(S.shake+rumble)*(camMode===1?.08:.35)*(camMode===3?0:1)*(paused?0:1);
-  if(A>1e-4){camera.position.add(new V3(Math.random()-.5,Math.random()-.5,Math.random()-.5).multiplyScalar(A));if(camMode===1){camera.rotateX((Math.random()-.5)*A*.15);camera.rotateZ((Math.random()-.5)*A*.1);}}}
+  const rumble=S.onGround?Math.min(1,gs/60)*(onPaved(S.pos.x,S.pos.z)?.09:.3)*(S.belly?3:1):Math.min(.08,env.turb*.04*Math.min(1,S.V/80));
+  const A=(S.shake+rumble)*(camMode===1?.14:.6)*(camMode===3?0:1)*(paused?0:1)*Math.max(1,P.len/30);
+  if(A>1e-4){camera.position.add(new V3(Math.random()-.5,Math.random()-.5,Math.random()-.5).multiplyScalar(A));if(camMode===1){camera.rotateX((Math.random()-.5)*A*.25);camera.rotateZ((Math.random()-.5)*A*.18);}}}
  camera.updateProjectionMatrix();
  if(plane)for(const m of plane.parts.hide)m.visible=camMode!==1;
 }
@@ -1064,13 +1073,15 @@ function updateCamera(dt){
 // ============================================================ per-frame visuals
 let flash=0,nextLightning=5,inCloud=0;
 function updateVisuals(dt,t){
- if(plane){plane.group.position.copy(S.pos);plane.group.quaternion.copy(S.q);plane.setGear(S.gearPos,{N:S.dmg.gearN,L:S.dmg.gearL,R:S.dmg.gearR});plane.setSurfaces(S.flapDeg,IN.roll,IN.pitch,IN.yaw);
+ if(plane){plane.group.position.copy(S.pos);plane.group.quaternion.copy(S.q);if(S.onGround&&!paused){const gs=Math.hypot(S.vel.x,S.vel.z),j=Math.min(1,gs/50)*(onPaved(S.pos.x,S.pos.z)?1:2.5)*(S.belly?2.5:1)+S.shake*1.5;plane.group.position.y+=(Math.random()-.5)*.05*j*Math.max(1,P.len/30);plane.group.rotateX((Math.random()-.5)*.004*j);plane.group.rotateZ((Math.random()-.5)*.004*j);}plane.setGear(S.gearPos,{N:S.dmg.gearN,L:S.dmg.gearL,R:S.dmg.gearR});plane.setSurfaces(S.flapDeg,IN.roll,IN.pitch,IN.yaw);
   for(const f of plane.parts.flames){f.visible=S.ab>.05&&!S.crashed;f.scale.set(1,1,.4+S.ab*.8+Math.random()*.08);}
   const L=plane.parts.lights,nl=.45+env.night*.75;
   L.navR.visible=L.navL.visible=L.tail.visible=S.lights.nav;for(const s of [L.navR,L.navL,L.tail])s.material.opacity=nl;
   const bc=S.lights.beacon&&(t%1.2)<.12;L.bcnT.visible=L.bcnB.visible=bc;
   const sp=S.lights.strobe&&((t%1.1)<.05||((t%1.1)>.15&&(t%1.1)<.2));L.strR.visible=L.strL.visible=sp;
-  L.land.visible=S.lights.land&&S.gearPos>.9;L.land.material.opacity=.4+env.night*.6;L.spot.intensity=L.land.visible?(80+env.night*500):0;}
+  const landOn=S.lights.land&&(L.wingMount||S.gearPos>.9)&&!S.crashed,taxiOn=S.lights.taxi&&S.gearPos>.9&&!S.crashed;
+  for(const sp of L.landSpots)sp.intensity=landOn?(70+env.night*420):0;L.taxi.intensity=taxiOn?(20+env.night*140):0;for(const sp of L.turn)sp.intensity=taxiOn?(15+env.night*110):0;
+  L.land.visible=taxiOn||(landOn&&!L.wingMount);L.land.material.opacity=.4+env.night*.6;for(const g of L.landGlow){g.visible=landOn;g.material.opacity=.4+env.night*.6;}}
  sky.position.copy(camera.position);stars.position.copy(camera.position);
  // shadow camera follows aircraft
  sun.position.copy(S.pos).addScaledVector(sunDir,2000);sun.target.position.copy(S.pos);sun.target.updateMatrixWorld();
@@ -1250,7 +1261,7 @@ function drawHUD(dt){
   ly+=16;H.fillStyle='#20242a';H.fillRect(lx,ly,100,8);const fmax=P.flaps[P.flaps.length-1].deg;H.fillStyle='#4cc2ff';H.fillRect(lx,ly,100*S.flapDeg/fmax,8);
   for(let i=1;i<P.flaps.length;i++){H.fillStyle='#0a0b0d';H.fillRect(lx+100*P.flaps[i].deg/fmax-1,ly,2,8);}ly+=16;
   lamp(lx,ly,S.brake,S.onGround?'#ffb020':'#4cc2ff',S.onGround?'BRAKE':'SPDBRK',52);P.ab?lamp(lx+56,ly,S.ab>.1,'#ff8a2a','A/B',48):lamp(lx+56,ly,S.rev>0,'#4cc2ff','REV',48);ly+=20;lamp(lx,ly,S.spoilers,'#4cc2ff',P.ab?'AEROBRK':'SPOILER',104);ly+=20;
-  lamp(lx,ly,S.lights.nav,'#3fd47a','NAV',32);lamp(lx+34,ly,S.lights.strobe,'#e6edf3','STRB',36);lamp(lx+72,ly,S.lights.land,'#ffe28a','LDG',32);ly+=22;
+  lamp(lx,ly,S.lights.nav,'#3fd47a','NAV',25);lamp(lx+26,ly,S.lights.strobe,'#e6edf3','STR',25);lamp(lx+52,ly,S.lights.land,'#ffe28a','LDG',25);lamp(lx+78,ly,S.lights.taxi,'#ffe28a','TAXI',28);ly+=22;
   {const Dm=S.dmg,dc=v=>v<.05?null:(v<.45?'#ffb020':'#ff4d4d');const L4=[['L WING',Dm.wingL],['R WING',Dm.wingR],['ENG',S.fire?1:Dm.eng],['TAIL',Dm.tail]];
    L4.forEach(([lb,v],i)=>{const c=dc(v);lamp(lx+(i%2)*54,ly+(i>>1)*19,!!c,c||'#000',lb,52);});ly+=40;
    const hp=Math.round((1-Dm.hull)*100);H.fillStyle=hp>70?'#3fd47a':hp>35?'#ffb020':'#ff4d4d';H.font='700 12px ui-monospace,monospace';H.textAlign='left';H.fillText(`AIRFRAME ${hp}%`,lx,ly+10);ly+=16;}
@@ -1291,7 +1302,7 @@ function drawHUD(dt){
 }
 
 // ============================================================ menu
-const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['L','Landing light'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
+const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
 for(const id of ['keysList','keysList2'])document.getElementById(id).innerHTML=KEYS.map(([k,v])=>`<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
 function seg(id,obj,key){const el=document.getElementById(id);el.innerHTML='';for(const [k,v] of Object.entries(obj)){const b=document.createElement('button');b.textContent=v.name;b.className=settings[key]===k?'sel':'';b.onclick=()=>{settings[key]=k;seg(id,obj,key);};el.appendChild(b);}}
 function cards(){const el=document.getElementById('planeCards');el.innerHTML='';for(const p of PLANES){const d=document.createElement('div');d.className='card'+(settings.plane===p.id?' sel':'');
