@@ -748,7 +748,7 @@ const S={pos:new V3(),vel:new V3(),q:new THREE.Quaternion(),p:0,qr:0,r:0,thr:0,n
  stalled:false,wingDrop:0,time:0,airT:0,shake:0,rev:0,spoilers:false,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,timerOn:false,airborne:false,touch:null,turnRate:0,lastHdg:0,crashT:0};
 const IN={pitch:0,roll:0,yaw:0};
 const keys=new Set();
-let hideAll=false,paused=true,started=false,camMode=0,orbit={yaw:0,pitch:0,dist:1,lastDrag:-9},look={yaw:0,pitch:0},showHelp=false,showHUD=true,showInst=true;
+let instInCockpit=false,hideAll=false,paused=true,started=false,camMode=0,orbit={yaw:0,pitch:0,dist:1,lastDrag:-9},look={yaw:0,pitch:0},showHelp=false,showHUD=true,showInst=true;
 const CAM_NAMES=['Chase','Cockpit','Fly-by','Tower'];
 const msgs=[];function msg(text,dur=3,col='#e6edf3'){if(window.__msgLog)window.__msgLog.push(text);msgs.push({text,t:dur,col});if(msgs.length>4)msgs.shift();}
 const camQ=new THREE.Quaternion();
@@ -761,6 +761,7 @@ function flapCL(){const f=P.flaps;const d=S.flapDeg;for(let i=0;i<f.length-1;i++
 function resetFlight(){
  P=PLANES.find(p=>p.id===settings.plane)||PLANES[0];
  if(plane)scene.remove(plane.group);plane=buildPlane(P);scene.add(plane.group);
+ if(cockpit)ckScene.remove(cockpit.group);cockpit=buildCockpit(P);ckScene.add(cockpit.group);showHUD=!P.model.windows;
  if(fireball){scene.remove(fireball);fireball=null;}
  clearFX();Object.assign(S,{slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
  IN.pitch=IN.roll=IN.yaw=0;orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;
@@ -1010,7 +1011,7 @@ addEventListener('keydown',e=>{
   case 'KeyM':Snd.muted=!Snd.muted;msg('Sound '+(Snd.muted?'off':'on'),1.2);break;
   case 'KeyH':if(e.shiftKey){hideAll=!hideAll;msg(hideAll?'All overlays hidden (Shift+H to restore)':'Overlays shown',1.5);}else{showHUD=!showHUD;msg('HUD '+(showHUD?'ON':'OFF')+(camMode!==1?' (HUD shows in cockpit view)':''),1.5);}break;
   case 'KeyK':mapMode=(mapMode+1)%3;msg('Map: '+['auto','island','airport'][mapMode],1.2);break;
-  case 'KeyI':showInst=!showInst;msg('Instruments '+(showInst?'ON':'OFF'),1.2);break;
+  case 'KeyI':if(camMode===1){instInCockpit=!instInCockpit;msg('2D instrument overlay '+(instInCockpit?'ON':'OFF'),1.2);}else{showInst=!showInst;msg('Instruments '+(showInst?'ON':'OFF'),1.2);}break;
   case 'F1':showHelp=!showHelp;document.getElementById('help').style.display=showHelp?'block':'none';break;
   case 'Enter':resetFlight();msgs.length=0;resetFlight();paused=false;break;
   case 'Escape':openMenu(true);break;
@@ -1140,7 +1141,7 @@ function updateVisuals(dt,t){
 }
 
 // ============================================================ HUD & instruments (2D canvas)
-const hud=document.getElementById('hud'),H=hud.getContext('2d');
+const hud=document.getElementById('hud');let H=hud.getContext('2d');
 function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();const d=Math.min(devicePixelRatio,QL[qLevel].pr>=1?2:1);hud.width=innerWidth*d;hud.height=innerHeight*d;H.setTransform(d,0,0,d,0,0);}
 addEventListener('resize',resize);
 const fmt=(n,d=0)=>n.toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d});
@@ -1265,6 +1266,7 @@ function drawHUD(dt){
  const brg=(Math.atan2(dx,-dz)*R2D+360)%360;
  const along=S.pos.z-tdz.z;let ils=null;if(along>200&&along<25000){const loc=Math.atan2(S.pos.x-DEST.x,S.pos.z-(DEST.z-DEST.len/2))*R2D;if(Math.abs(loc)<12)ils={loc,gs:Math.atan2(S.pos.y-P.gearH-tdz.y,along)*R2D-3};}
  const agl=(S.pos.y-P.gearH-Math.max(groundH(S.pos.x,S.pos.z),0))/FT;
+ INST={kt,ft,fpm,hdg,pitch,roll,brg,ils,agl,ball:Math.atan2(S.sf.dot(_r.set(1,0,0).applyQuaternion(S.q)),Math.max(.1,S.sf.dot(_u.set(0,1,0).applyQuaternion(S.q))))};
  // ---- cockpit HUD
  if(!hideAll&&camMode===1&&showHUD&&!S.crashed){const cx=W/2,cy=Hh/2,ppd=Hh/camera.fov;H.save();H.strokeStyle=H.fillStyle='rgba(90,255,140,.9)';H.lineWidth=1.6;H.font='600 13px ui-monospace,monospace';
   H.translate(cx,cy);H.save();H.rotate(-roll*D2R);
@@ -1278,7 +1280,7 @@ function drawHUD(dt){
   H.restore();}
  // ---- instruments six-pack
  const R=clamp(Math.min(Hh*.072,W*.055),40,66),gap=R*2+16;
- if(showInst&&!hideAll){const ox=16,oy=Hh-gap*2-10;H.fillStyle='rgba(12,14,18,.82)';H.beginPath();H.roundRect(ox-6,oy-4,gap*3+12+180,gap*2+8,12);H.fill();
+ if((camMode===1&&cockpit?instInCockpit:showInst)&&!hideAll){const ox=16,oy=Hh-gap*2-10;H.fillStyle='rgba(12,14,18,.82)';H.beginPath();H.roundRect(ox-6,oy-4,gap*3+12+180,gap*2+8,12);H.fill();
   const c=[ox+R+8,ox+R+8+gap,ox+R+8+gap*2],r=[oy+R+8,oy+R+8+gap];
   drawASI(c[0],r[0],R,kt);drawADI(c[1],r[0],R,pitch,roll,ils);drawALT(c[2],r[0],R,ft);
   const ballV=Math.atan2(S.sf.dot(_r.set(1,0,0).applyQuaternion(S.q)),Math.max(.1,S.sf.dot(_u.set(0,1,0).applyQuaternion(S.q))));
@@ -1336,6 +1338,97 @@ function drawHUD(dt){
  if(paused&&started&&!isUI()){H.font='800 34px system-ui';H.fillStyle='#fff';H.fillText('PAUSED (P)',W/2,Hh/2);}
 }
 
+// ============================================================ 3D cockpit (own render pass, own lights)
+const ckScene=new THREE.Scene(),ckCam=new THREE.PerspectiveCamera(70,1,.02,30);
+const ckHemi=new THREE.HemisphereLight(0xffffff,0x444444,1),ckSun=new THREE.DirectionalLight(0xffffff,1),ckFlood=new THREE.PointLight(0xffd9a0,0,6,1.5);
+ckScene.add(ckHemi,ckSun,ckSun.target,ckFlood);
+let cockpit=null,INST=null;
+function drawN1(x,y,r,n1,lab){bezel(x,y,r,null);const A=v=>(-.75+v*1.5)*Math.PI;
+ for(let v=0;v<=1.0001;v+=.1)tick(r,A(v),v%.5<.01?r*.16:r*.08,2);arc(r*.88,A(0),A(Math.max(.001,n1)),r*.1,n1>.97?'#ff8a2a':'#3fd47a');
+ needle(A(n1),r*.8,r*.08);hub(r);H.fillStyle='#fff';H.font=`700 ${r*.26}px ui-monospace,monospace`;H.textAlign='center';H.textBaseline='middle';H.fillText((n1*100).toFixed(0),0,r*.5);
+ H.fillStyle='#9aa3ad';H.font=`600 ${r*.16}px system-ui`;H.fillText(lab,0,-r*.3);H.restore();}
+function drawSysBlock(x,y,w,h){const f=Math.min(w,h*1.3)/150;H.save();H.translate(x,y);H.fillStyle='#0b0c0e';H.fillRect(0,0,w,h);
+ H.font=`700 ${11*f}px system-ui`;H.textAlign='left';H.textBaseline='middle';H.fillStyle='#9aa3ad';H.fillText('GEAR',8*f,14*f);
+ const gc=S.gearPos>.98?'#3fd47a':S.gearPos>.02?'#ff4d4d':'#20242a',br=[S.dmg.gearL,S.dmg.gearN,S.dmg.gearR];
+ for(let i=0;i<3;i++){H.fillStyle=br[i]?'#ff4d4d':gc;H.beginPath();H.arc((22+i*26)*f,(34-(i===1?6:0))*f,9*f,0,TAU);H.fill();}
+ H.fillStyle='#9aa3ad';H.fillText('FLAPS',8*f,60*f);H.fillStyle='#fff';H.font=`700 ${15*f}px ui-monospace,monospace`;H.fillText(P.flaps[S.flapIdx].n,60*f,60*f);
+ const fm=P.flaps[P.flaps.length-1].deg;H.fillStyle='#20242a';H.fillRect(8*f,72*f,(w-16*f),7*f);H.fillStyle='#4cc2ff';H.fillRect(8*f,72*f,(w-16*f)*S.flapDeg/fm,7*f);
+ const L=[[S.brake,S.onGround?'BRAKE':'SPDBRK','#ffb020'],[S.rev>0||S.ab>.1,P.ab?'A/B':'REV','#ff8a2a'],[S.spoilers,'SPLR','#4cc2ff'],[S.fire,'FIRE','#ff4d4d'],[S.warn,'MASTER WARN','#ff4d4d']];
+ H.font=`700 ${10*f}px system-ui`;L.forEach(([on,lb,c],i)=>{const yy=(92+i*15)*f;if(yy>h-6)return;H.fillStyle=on?c:'#20242a';H.fillRect(8*f,yy-6*f,w-16*f,12*f);H.fillStyle=on?'#000':'#6b7480';H.textAlign='center';H.fillText(lb,w/2,yy);});
+ H.restore();}
+function drawPanelTex(ctx,w,h,grid){const prev=H;H=ctx;const I=INST;ctx.fillStyle='#1c1f24';ctx.fillRect(0,0,w,h);if(!I){H=prev;return;}
+ const ball=-I.ball*4;
+ if(!grid){const r=h*.42,sp=r*2+h*.1;let x=r+h*.08;const y=h/2;
+  drawASI(x,y,r,I.kt);x+=sp;drawADI(x,y,r,I.pitch,I.roll,I.ils);x+=sp;drawALT(x,y,r,I.ft);x+=sp;drawHI(x,y,r,I.hdg,I.brg-I.hdg);x+=sp;drawVSI(x,y,r,I.fpm);x+=sp;
+  drawTC(x,y,r,S.turnRate,ball);x+=sp*.85;drawN1(x,y-r*.45,r*.5,S.n1,'N1 %');drawSysBlock(x+r*.62,h*.06,w-(x+r*.62)-h*.05,h*.88);}
+ else{const r=h*.21,sp=r*2+h*.05,x0=r+h*.06,y0=r+h*.05;
+  drawASI(x0,y0,r,I.kt);drawADI(x0+sp,y0,r,I.pitch,I.roll,I.ils);drawALT(x0+sp*2,y0,r,I.ft);
+  drawTC(x0,y0+sp,r,S.turnRate,ball);drawHI(x0+sp,y0+sp,r,I.hdg,I.brg-I.hdg);drawVSI(x0+sp*2,y0+sp,r,I.fpm);
+  const xs=x0+sp*2+r+h*.05;drawN1(xs+(w-xs)/2,y0*.85,r*.75,S.n1,'RPM %');drawSysBlock(xs+h*.02,y0+r*.6,w-xs-h*.05,h-(y0+r*.6)-h*.04);}
+ H=prev;}
+function buildCockpit(P){
+ const g=new THREE.Group(),e=P.model.eye,ex=e[0],ey=e[1],ez=e[2],fighter=!P.model.windows;
+ const M=c=>new THREE.MeshStandardMaterial({color:c,roughness:.8,metalness:.15});
+ const frame=M('#2a2e34'),wall=M('#3b4048'),dark=M('#16181b'),seat=M('#2b2b30'),metal=M('#8a8f96');
+ const box=(w,h,d,x,y,z,m=frame,rx=0)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);b.rotation.x=rx;g.add(b);return b;};
+ const grid=fighter;const cw=grid?768:2048,chh=grid?384:300;
+ const cvs=document.createElement('canvas');cvs.width=cw;cvs.height=chh;const ctx=cvs.getContext('2d');const tex=new THREE.CanvasTexture(cvs);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=maxAniso;
+ const parts={yokes:[],levers:[],stick:null};
+ if(!fighter){
+  const big=P.len>45,W=P.id==='lj45'?1.75:(big?3.6:3.2),hw=W/2,cxp=0;
+  const pz=ez-.95,ptop=ey-.3,pbot=ey-.86,pw=W*.88;
+  const pnl=new THREE.Mesh(new THREE.PlaneGeometry(pw,ptop-pbot),new THREE.MeshBasicMaterial({map:tex,toneMapped:false}));pnl.position.set(cxp,(ptop+pbot)/2,pz);pnl.rotation.x=-.22;g.add(pnl);
+  box(pw+.08,ptop-pbot+.08,.04,cxp,(ptop+pbot)/2,pz-.03,dark,-.22);
+  box(pw+.1,.08,.45,cxp,ptop+.02,pz-.12,dark);
+  box(.5,.45,1.1,0,ey-1.02,ez-.35,wall);box(.42,.02,.9,0,ey-.79,ez-.35,dark);
+  const ne=(P.model.pods||[]).length||2;for(let i=0;i<ne;i++){const pv=new THREE.Group();pv.position.set(-.12+(.24*i/Math.max(1,ne-1)),ey-.78,ez-.5);g.add(pv);
+   const lv=new THREE.Mesh(new THREE.BoxGeometry(.025,.2,.025).translate(0,.1,0),metal);const kn=new THREE.Mesh(new THREE.BoxGeometry(.06,.03,.035).translate(0,.2,0),M('#222'));pv.add(lv,kn);parts.levers.push(pv);}
+  const airbus=/^a/.test(P.id);
+  for(const sx of [-1,1]){const x=sx*Math.abs(ex);
+   if(airbus){const st=new THREE.Group();st.position.set(sx*(Math.abs(ex)+.42),ey-.62,ez-.15);g.add(st);st.add(new THREE.Mesh(new THREE.CylinderGeometry(.02,.025,.16,8).translate(0,.08,0),M('#222')));parts.yokes.push({g:st,side:true});}
+   else{const yk=new THREE.Group();yk.position.set(x,ey-.55,ez-.52);g.add(yk);yk.add(new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.6,8).translate(0,-.3,0),frame));
+    const wh=new THREE.Group();wh.position.y=.02;yk.add(wh);const rim=new THREE.Mesh(new THREE.TorusGeometry(.15,.018,6,20,Math.PI*1.2).rotateZ(-Math.PI*.1),M('#1d1d1f'));rim.rotation.z=Math.PI;wh.add(rim);
+    wh.add(new THREE.Mesh(new THREE.BoxGeometry(.3,.035,.03),M('#1d1d1f')));parts.yokes.push({g:yk,w:wh});}
+   box(.5,.08,.5,x,ey-.98,ez+.25,seat);box(.5,.75,.1,x,ey-.6,ez+.5,seat);
+   box(.3,.08,1.0,sx*(hw-.18),ey-.68,ez-.3,wall);}
+  for(const sx of [-1,1]){box(.05,1.15,2.4,sx*hw,ey-.75,ez-.1,wall);box(.06,.78,.06,sx*hw,ey+.15,ez-.3);box(.06,.78,.06,sx*hw,ey+.15,ez+.4);
+   box(.07,.07,1.1,sx*hw,ey-.17,ez-.1);box(.06,.06,1.6,sx*hw,ey+.54,ez);}
+  const wz=ez-1.12;box(W,.06,.06,0,ptop+.08,wz);box(W,.07,.07,0,ey+.52,wz+.3);
+  for(const px of [0,-W*.31,W*.31,-hw+.04,hw-.04])box(.05,.7,.05,px,ey+.15,wz+.15,frame,-.42);
+  box(W,.05,2.4,0,ey+.6,ez+.25,wall);
+  const ov=new THREE.Mesh(new THREE.BoxGeometry(W*.45,.04,.95),M('#2c3138'));ov.position.set(0,ey+.55,ez+.05);ov.rotation.x=.28;g.add(ov);
+  {const oc=document.createElement('canvas');oc.width=256;oc.height=512;const o=oc.getContext('2d');o.fillStyle='#2c3138';o.fillRect(0,0,256,512);for(let i=0;i<14;i++)for(let j=0;j<5;j++){o.fillStyle=Math.random()<.15?'#ffcf5a':'#5a6068';o.fillRect(20+j*46,20+i*35,22,12);}
+   const ot=new THREE.CanvasTexture(oc);ot.colorSpace=THREE.SRGBColorSpace;const op=new THREE.Mesh(new THREE.PlaneGeometry(W*.42,.9),new THREE.MeshBasicMaterial({map:ot,toneMapped:false,color:0x999999}));op.rotation.x=Math.PI/2+.28;op.position.set(0,ey+.525,ez+.05);g.add(op);}
+  box(W,1.6,.05,0,ey-.3,ez+1.1,wall);
+ }else{
+  const pz=ez-.75,pw=.92,ph=.46,pyc=ey-.55;
+  const pnl=new THREE.Mesh(new THREE.PlaneGeometry(pw,ph),new THREE.MeshBasicMaterial({map:tex,toneMapped:false}));pnl.position.set(0,pyc,pz);pnl.rotation.x=-.18;g.add(pnl);
+  box(pw+.06,ph+.06,.04,0,pyc,pz-.03,dark,-.18);box(pw,.07,.32,0,pyc+ph/2+.03,pz-.13,dark);
+  const comb=new THREE.Mesh(new THREE.PlaneGeometry(.2,.18),new THREE.MeshBasicMaterial({color:0x7fffb0,transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide}));comb.position.set(0,ey-.13,ez-.62);comb.rotation.x=-.35;g.add(comb);
+  box(.008,.1,.008,-.1,ey-.2,ez-.65,dark,-.35);box(.008,.1,.008,.1,ey-.2,ez-.65,dark,-.35);
+  const bow=new THREE.Mesh(new THREE.TorusGeometry(.6,.035,8,24,Math.PI),frame);bow.position.set(0,ey-.3,ez-.98);g.add(bow);
+  const bow2=new THREE.Mesh(new THREE.TorusGeometry(.6,.03,8,24,Math.PI),frame);bow2.position.set(0,ey-.3,ez+.55);g.add(bow2);
+  for(const sx of [-1,1]){box(.06,.06,1.8,sx*.6,ey-.32,ez-.2);box(.05,.65,1.8,sx*.62,ey-.65,ez-.2,wall);box(.22,.06,.9,sx*.45,ey-.68,ez-.05,wall);}
+  box(.55,.85,.12,0,ey-.45,ez+.38,seat);box(.35,.25,.15,0,ey+.05,ez+.36,seat);
+  const st=new THREE.Group();st.position.set(P.id==='f16'?.42:0,P.id==='f16'?ey-.62:ey-.95,P.id==='f16'?ez-.2:ez-.45);g.add(st);
+  st.add(new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,P.id==='f16'?.12:.4,8).translate(0,P.id==='f16'?.06:.2,0),M('#222')));parts.stick=st;
+  const pv=new THREE.Group();pv.position.set(-.45,ey-.64,ez-.2);g.add(pv);pv.add(new THREE.Mesh(new THREE.BoxGeometry(.04,.12,.05).translate(0,.06,0),M('#222')));parts.levers.push(pv);
+ }
+ g.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
+ let tick2=0;
+ return {group:g,update(){g.position.copy(S.pos);g.quaternion.copy(S.q);
+  for(const lv of parts.levers)lv.rotation.x=.55-Math.min(1,S.thr)*1.0+(S.rev>0?.35:0);
+  for(const y of parts.yokes){if(y.side){y.g.rotation.x=IN.pitch*.25;y.g.rotation.z=-IN.roll*.25;}else{y.g.position.z=ez-.52+IN.pitch*.07;y.w.rotation.z=-IN.roll*.9;}}
+  if(parts.stick){parts.stick.rotation.x=IN.pitch*.25;parts.stick.rotation.z=-IN.roll*.25;}
+  if(++tick2%(QL[qLevel].hud*2)===0){drawPanelTex(ctx,cw,chh,grid);tex.needsUpdate=true;}}};
+}
+function renderCockpit(){if(camMode!==1||!cockpit||!plane)return;cockpit.update();
+ ckCam.fov=camera.fov;ckCam.aspect=camera.aspect;ckCam.updateProjectionMatrix();ckCam.position.copy(camera.position);ckCam.quaternion.copy(camera.quaternion);
+ ckHemi.color.copy(hemi.color);ckHemi.groundColor.copy(hemi.groundColor);ckHemi.intensity=hemi.intensity*.9+.05+flash*2;
+ ckSun.color.copy(sun.color);ckSun.intensity=sun.intensity*.8;ckSun.position.copy(S.pos).addScaledVector(sunDir,50);ckSun.target.position.copy(S.pos);ckSun.target.updateMatrixWorld();
+ const e=P.model.eye;ckFlood.position.copy(new V3(e[0]*.3,e[1]+.3,e[2]+.1).applyQuaternion(S.q).add(S.pos));ckFlood.intensity=env.night*1.2;
+ renderer.autoClear=false;renderer.clearDepth();renderer.render(ckScene,ckCam);renderer.autoClear=true;}
+
 // ============================================================ menu
 const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Press any button to activate · sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
 for(const id of ['keysList','keysList2'])document.getElementById(id).innerHTML=KEYS.map(([k,v])=>`<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
@@ -1365,7 +1458,7 @@ function frame(now){
   acc+=dt;const h=1/120;let n=0;while(acc>=h&&n<12){physicsStep(h);acc-=h;n++;}if(S.crashed)S.crashT+=dt;
  }
  updateVisuals(dt,t);updateFX(dt);updateCamera(dt);
- renderer.render(scene,camera);
+ renderer.render(scene,camera);renderCockpit();
  FPS.acc+=dt;FPS.n++;if(FPS.acc>=1){FPS.v=FPS.n/FPS.acc;FPS.acc=0;FPS.n=0;autoQuality(t);}
  hudDt+=dt;if(++hudFrame%QL[qLevel].hud===0){drawHUD(hudDt);hudDt=0;}
  Snd.update(S.n1*(1-S.dmg.eng),S.ab,S.V,S.warn&&!S.crashed&&!paused,Math.max((env.precip==='rain'&&camera.position.y<env.base)?(env.heavy?1:.6):0,Math.min(1.5,S.scrape/25)),camMode===1,S.onGround?Math.min(1,Math.hypot(S.vel.x,S.vel.z)/60)*(S.belly?1.6:.6)*(onPaved(S.pos.x,S.pos.z)?1:1.8):0);
