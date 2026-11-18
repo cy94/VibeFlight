@@ -1025,7 +1025,8 @@ addEventListener('mousemove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.
  if(camMode===1){look.yaw=clamp(look.yaw-dx*.005,-2.6,2.6);look.pitch=clamp(look.pitch-dy*.005,-1.2,1.2);}else{orbit.yaw-=dx*.006;orbit.pitch=clamp(orbit.pitch-dy*.005,-1.2,1.2);}orbit.lastDrag=performance.now()/1000;});
 canvas.addEventListener('dblclick',()=>{orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;});
 addEventListener('wheel',e=>{if(isUI())return;orbit.dist=clamp(orbit.dist*(e.deltaY>0?1.1:.9),.35,5);},{passive:true});
-let padPrev=[];
+let padPrev=[];const armedPads=new Set();
+addEventListener('gamepaddisconnected',e=>armedPads.delete(e.gamepad.index));
 function readInput(dt){
  if(S.crashed||S.ditched){IN.pitch=IN.roll=IN.yaw=0;S.thr=0;S.brake=false;return;}
  const k=c=>keys.has(c);const inv=settings.invert?-1:1;
@@ -1035,7 +1036,10 @@ function readInput(dt){
  if(k('KeyE'))ty+=1;if(k('KeyQ'))ty-=1;
  let thrD=0;if(k('KeyR')||k('PageUp')||k('Equal')||k('NumpadAdd'))thrD+=1;if(k('KeyF')||k('PageDown')||k('Minus')||k('NumpadSubtract'))thrD-=1;
  S.brake=k('KeyB')||k('Space');
- const pads=navigator.getGamepads?navigator.getGamepads():[];const gp=[...pads].find(p=>p&&p.connected);
+ const pads=navigator.getGamepads?navigator.getGamepads():[];
+ for(const p of pads){if(!p||!p.connected||armedPads.has(p.index)||/accel|motion|sensor|gyro|lis3|hdaps|tablet|touch/i.test(p.id))continue;
+  if(p.buttons.some(b=>b.pressed)){armedPads.add(p.index);msg('Gamepad active: '+p.id.slice(0,40),2.5,'#7fd6ff');}}
+ const gp=[...pads].find(p=>p&&p.connected&&armedPads.has(p.index));
  let padActive=false;
  if(gp){const dz=v=>Math.abs(v)<.08?0:v;const ax=gp.axes;
   if(Math.abs(dz(ax[0]))+Math.abs(dz(ax[1]))+Math.abs(dz(ax[2]||0))>0){padActive=true;tr=dz(ax[0]);tp=dz(ax[1])*inv;ty=dz(ax[2]||0);}
@@ -1333,7 +1337,7 @@ function drawHUD(dt){
 }
 
 // ============================================================ menu
-const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
+const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Press any button to activate · sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
 for(const id of ['keysList','keysList2'])document.getElementById(id).innerHTML=KEYS.map(([k,v])=>`<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
 function seg(id,obj,key){const el=document.getElementById(id);el.innerHTML='';for(const [k,v] of Object.entries(obj)){const b=document.createElement('button');b.textContent=v.name;b.className=settings[key]===k?'sel':'';b.onclick=()=>{settings[key]=k;seg(id,obj,key);};el.appendChild(b);}}
 function cards(){const el=document.getElementById('planeCards');el.innerHTML='';for(const p of PLANES){const d=document.createElement('div');d.className='card'+(settings.plane===p.id?' sel':'');
@@ -1384,6 +1388,8 @@ setTimeout(()=>{
  const qs=new URLSearchParams(location.search);
  if(qs.has('auto')){for(const k of ['plane','weather','time','start'])if(qs.get(k))settings[k]=qs.get(k);if(qs.has('cam'))camMode=+qs.get('cam');document.getElementById('flyBtn').click();if(qs.has('thr'))S.thr=+qs.get('thr');if(qs.has('yaw')){orbit.yaw=+qs.get('yaw');orbit.pitch=+(qs.get('pitch')||0);orbit.dist=+(qs.get('dist')||1);orbit.lastDrag=1e12;}if(qs.has('clean')){msgs.length=0;showInst=!qs.has('noinst');}}
  if(qs.has('selftest'))setTimeout(selfTest,50);
+ if(qs.has('trace')){const t0=performance.now();let lastT=0;const iv=setInterval(()=>{const e=new THREE.Euler().setFromQuaternion(S.q,'YXZ');const tt=(performance.now()-t0)/1000;
+  console.log(`TRACE t=${tt.toFixed(2)} pitch=${(e.x*R2D).toFixed(2)} y=${(S.pos.y-AIRPORTS[0].elev).toFixed(3)} vy=${S.vel.y.toFixed(3)} qr=${S.qr.toFixed(3)} gnd=${+S.onGround} airT=${S.airT.toFixed(2)} IN=${IN.pitch.toFixed(2)} thr=${S.thr.toFixed(2)} fps=${FPS.v.toFixed(0)} q=${qLevel} warn=${S.warn} tail=${S.dmg.tail.toFixed(2)}`);if(tt>12)clearInterval(iv);},250);}
  requestAnimationFrame(frame);
 },30);
 function selfTest(){
