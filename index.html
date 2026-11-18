@@ -845,15 +845,17 @@ function physicsStep(dt){
  let cQ=IN.pitch*P.pitchRate*D2R*eff*tailA;
  const gR=P.maxG*G/Math.max(V,25);cQ=clamp(cQ,-gR*.45,gR);
  if(P.aoaLimit&&!s.onGround){const lim=P.aoaLimit*D2R;cQ=Math.min(cQ,(lim-alpha)*4);}
- if(alpha>st)cQ-=(alpha-st)*2.4*Math.min(1,qn+.35);
- if(alpha<stN)cQ+=(stN-alpha)*2.4*Math.min(1,qn+.35);
+ const gnd0=s.onGround||s.airT<.35,stk=gnd0?qn*qn:Math.min(1,qn+.35);
+ if(alpha>st)cQ-=(alpha-st)*2.4*stk;
+ if(alpha<stN)cQ+=(stN-alpha)*2.4*stk;
  cQ-=Math.max(0,1-qn/.35)*.35*Math.sin(alpha)*(s.onGround?0:1);
  let cP=IN.roll*P.rollRate*D2R*eff*rollA-beta*.6*eff+(D.wingR-D.wingL)*1.1*Math.min(1.5,qd/P.qRef);
  if(s.stalled){if(!s.wingDrop)s.wingDrop=(Math.random()<.5?-1:1)*(.4+Math.random()*.5);cP+=s.wingDrop*Math.min(1.2,(Math.abs(alpha)-st)*6+.2);}else s.wingDrop=0;
  let cR=IN.yaw*P.yawRate*D2R*eff*tailA+beta*P.yawStab*Math.min(1,qn+.15)*(1-.5*D.tail);
- cP+=fbm(simT*1.3,41,2)*env.turb*.25;cQ+=fbm(simT*1.1,57,2)*env.turb*.06;
+ const gnd=s.onGround||s.airT<.35;
+ if(!gnd){cP+=fbm(simT*1.3,41,2)*env.turb*.25;cQ+=fbm(simT*1.1,57,2)*env.turb*.06;}
  if(s.crashed&&!s.onGround){cP=s.p;cR=s.r;}
- if(s.onGround){
+ if(gnd){
   const gsp=Math.hypot(s.vel.x,s.vel.z);
   if(s.crashed||s.belly||s.ditched)cR=s.r*Math.exp(-dt*1.2);
   else cR=IN.yaw*.5*clamp(gsp/6,0,1)*clamp(1-gsp/90,.15,1)+IN.yaw*P.yawRate*D2R*eff*.5;
@@ -861,7 +863,7 @@ function physicsStep(dt){
  }
  if(s.onGround||agl-P.gearH<6){const pNow=Math.asin(clamp(_f.y,-1,1))*R2D,rot=(P.ab?6:(P.model.windows?3.2:4.5))*D2R;
   if(cQ>rot)cQ=rot;if(cQ>0)cQ*=clamp((P.tailStrike-1.5-pNow)/4,0,1);}
- const k=1-Math.exp(-P.resp*dt);
+ s.dbgQ=cQ;const k=1-Math.exp(-P.resp*dt);
  s.p+=(cP-s.p)*k;s.qr+=(cQ-s.qr)*k;s.r+=(cR-s.r)*k;
  const rv=_tmp.set(s.qr,-s.r,-s.p);const ang=rv.length()*dt;
  if(ang>1e-9){_dq.setFromAxisAngle(rv.normalize(),ang);s.q.multiply(_dq).normalize();}
@@ -916,8 +918,8 @@ function physicsStep(dt){
   s.onGround=true;s.airT=0;let Nspring=-1;
   if(springy){const om=Math.sqrt(G/sDef),c=surf+reach-s.pos.y;let vy=s.vel.dot(n);
    const spd2=Math.hypot(s.vel.x,s.vel.z),pv=onPaved(s.pos.x,s.pos.z);
-   let road=(Math.random()-.5)*2*Math.min(1,spd2/45)*(pv?3:9);
-   s.slab=(s.slab||0)+spd2*dt;if(pv&&s.slab>17){s.slab=0;road+=Math.min(1,spd2/35)*55;}
+   let road=(Math.random()-.5)*2*Math.min(1,spd2/45)*(pv?2:7);
+   s.slab=(s.slab||0)+spd2*dt;if(pv&&s.slab>17){s.slab=0;road+=Math.min(1,spd2/35)*22;s.shake=Math.max(s.shake,.12*Math.min(1,spd2/35));}
    const a=Math.max(0,om*om*c-2*(vy>0?.5:.28)*om*vy+road);s.vel.addScaledVector(n,a*dt);Nspring=a*P.mass;
    if(c>stroke){s.pos.y=surf+reach-stroke;vy=s.vel.dot(n);if(vy<0){s.vel.addScaledVector(n,-vy);s.shake=Math.max(s.shake,.7);}}}
   else{s.pos.y=surf+bottom;const vnn=s.vel.dot(n);if(vnn<0)s.vel.addScaledVector(n,-vnn*(water?1:1.12));}
@@ -1515,6 +1517,10 @@ function selfTest(){
  for(const id of ['b738','a388','lj45','f16']){settings.plane=id;settings.start='takeoff';resetFlight();window.__msgLog=[];S.thr=1;let mx=0;
   for(let t=0;t<60;t+=h){IN.pitch=S.V>P.vr*.75?1:0;physicsStep(h);mx=Math.max(mx,Math.asin(S.q.clone().invert().invert()&&new V3(0,0,-1).applyQuaternion(S.q).y)*R2D*(S.onGround?1:0));}
   out.push(`full-pull ${id}: max ground pitch ${mx.toFixed(1)}° (tailstrike ${P.tailStrike}°) tail dmg ${S.dmg.tail.toFixed(2)} airborne ${S.airborne} alt ${Math.round(S.pos.y-45)}m ${[...new Set(window.__msgLog)].filter(x=>/tail|Tail/.test(x)).join(',')}`);}
+ for(const id of ['b738','f16','a388']){settings.plane=id;settings.start='takeoff';settings.weather='storm';applyEnv();resetFlight();let mx=0,hops=0,was=1;
+  for(let t=0;t<40;t+=h){S.thr=.35;IN.pitch=0;IN.roll=0;IN.yaw=0;S.brake=false;physicsStep(h);if(S.onGround)mx=Math.max(mx,new THREE.Euler().setFromQuaternion(S.q,'YXZ').x*R2D);if(!S.onGround&&was)hops++;was=S.onGround;}
+  out.push(`hands-off roll ${id} (storm): max pitch on ground ${mx.toFixed(2)}° hops ${hops} speed ${(Math.hypot(S.vel.x,S.vel.z)/KT).toFixed(0)}kt`);}
+ settings.weather='clear';applyEnv();
  console.log('SELFTEST\n'+out.join('\n'));
 }
 </script>
