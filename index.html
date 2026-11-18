@@ -47,6 +47,7 @@ details summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:13px}
  <div class="panel">
   <h1>VibeFlight <span>flight sim</span></h1>
   <p class="sub">Take off from <b>Hillcrest Field (HLC)</b> and land on runway 36 at <b>Lakeside International (LKS)</b>, 12 km due north. Follow the magenta pointer on the heading indicator, then the ILS needles and the PAPI lights.</p>
+  <div id="swWarn" style="display:none;background:#3a1d12;border:1px solid #a4502a;border-radius:8px;padding:8px 12px;margin:10px 0;font-size:13px;color:#ffd9c2"></div>
   <h3>Aircraft</h3>
   <div id="planeCards" class="cards"></div>
   <div class="row">
@@ -258,7 +259,7 @@ function nearAirport(x,z,m){for(const ap of AIRPORTS){if(x>ap.x-350-m&&x<ap.x+75
 // ============================================================ renderer / scene
 const canvas=document.getElementById('gl');
 const GPU=(()=>{try{const c=document.createElement('canvas');const gl=c.getContext('webgl2')||c.getContext('webgl');const e=gl.getExtension('WEBGL_debug_renderer_info');const r=e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);const lc=gl.getExtension('WEBGL_lose_context');if(lc)lc.loseContext();return String(r);}catch(e){return '';}})();
-const QL=[{n:'Potato',pr:.5,sh:0,cl:.25,tr:.15,far:35000,spots:1,hud:2,fx:150,pc:.3},
+const QL=[{n:'Potato',pr:.4,sh:0,cl:.25,tr:.15,far:35000,spots:1,hud:2,fx:150,pc:.3},
  {n:'Low',pr:.7,sh:0,cl:.45,tr:.35,far:55000,spots:1,hud:2,fx:250,pc:.5},
  {n:'Medium',pr:1,sh:1024,cl:.7,tr:.65,far:100000,spots:2,hud:1,fx:450,pc:.8},
  {n:'High',pr:1.5,sh:2048,cl:1,tr:1,far:160000,spots:5,hud:1,fx:700,pc:1},
@@ -267,14 +268,15 @@ const GFX_NAMES={auto:'Auto',0:'Potato',1:'Low',2:'Medium',3:'High',4:'Ultra'};
 let qLevel=/swiftshader|llvmpipe|softpipe|software/i.test(GPU)?0:/intel|uhd|iris|hd graphics|mali|adreno|powervr|videocore|radeon\(tm\) graphics|vega \d+ graphics/i.test(GPU)?1:3;
 if((navigator.hardwareConcurrency||8)<=4)qLevel=Math.min(qLevel,1);
 {let g='auto';try{g=JSON.parse(localStorage.getItem('vibeflight')||'{}').gfx||'auto';}catch(e){}if(g!=='auto')qLevel=+g;}
-const renderer=new THREE.WebGLRenderer({canvas,antialias:qLevel>=3,logarithmicDepthBuffer:true,powerPreference:'high-performance'});
+const LOGZ=qLevel>=2;
+const renderer=new THREE.WebGLRenderer({canvas,antialias:qLevel>=3,logarithmicDepthBuffer:LOGZ,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,QL[qLevel].pr));
 renderer.setSize(innerWidth,innerHeight);
 renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 scene.fog=new THREE.FogExp2(0xa9c4dd,0.00002);
-const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.3,160000);
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,LOGZ?.3:.8,160000);
 const hemi=new THREE.HemisphereLight(0xbcd6f0,0x5a5040,1.0);scene.add(hemi);
 const sun=new THREE.DirectionalLight(0xffffff,3);sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-120,right:120,top:120,bottom:-120,near:10,far:4000});
@@ -337,9 +339,9 @@ function buildTerrain(){
  }
  geo.setAttribute('color',new THREE.BufferAttribute(col,3));
  const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.95,metalness:0}));
- m.receiveShadow=true;scene.add(m);
+ m.receiveShadow=true;scene.add(m);terrainMesh=m;m.userData.hi=m.material;m.userData.lo=new THREE.MeshLambertMaterial({vertexColors:true});
  const water=new THREE.Mesh(new THREE.PlaneGeometry(400000,400000).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({color:0x1b4a66,roughness:.18,metalness:.05,transparent:true,opacity:.86}));
- water.receiveShadow=true;water.renderOrder=1;scene.add(water);
+ water.receiveShadow=true;water.renderOrder=1;scene.add(water);waterMesh=water;water.userData.hi=water.material;water.userData.lo=new THREE.MeshLambertMaterial({color:0x1b4a66,transparent:true,opacity:.86});
 }
 
 // ============================================================ point lights shader (runway / approach / obstruction)
@@ -856,6 +858,8 @@ function physicsStep(dt){
   else cR=IN.yaw*.5*clamp(gsp/6,0,1)*clamp(1-gsp/90,.15,1)+IN.yaw*P.yawRate*D2R*eff*.5;
   const liftFrac=clamp((_F.y+P.W)/P.W,0,1);cQ-=(1-liftFrac)*.12;cP=0;
  }
+ if(s.onGround||agl-P.gearH<6){const pNow=Math.asin(clamp(_f.y,-1,1))*R2D,rot=(P.ab?6:(P.model.windows?3.2:4.5))*D2R;
+  if(cQ>rot)cQ=rot;if(cQ>0)cQ*=clamp((P.tailStrike-1.5-pNow)/4,0,1);}
  const k=1-Math.exp(-P.resp*dt);
  s.p+=(cP-s.p)*k;s.qr+=(cQ-s.qr)*k;s.r+=(cR-s.r)*k;
  const rv=_tmp.set(s.qr,-s.r,-s.p);const ang=rv.length()*dt;
@@ -1053,7 +1057,7 @@ const flyby={pos:new V3(),t:99};
 function updateCamera(dt){
  const now=performance.now()/1000;
  if(!drag&&now-orbit.lastDrag>2){orbit.yaw*=Math.exp(-dt*1.2);orbit.pitch*=Math.exp(-dt*1.2);}
- const target=S.pos;camera.fov=60;camera.near=.3;
+ const target=S.pos;camera.fov=60;camera.near=LOGZ?.3:.8;
  if(camMode===0){
   camQ.slerp(S.q,1-Math.exp(-dt*(S.onGround?8:4)));
   const dist=(P.len*1.15+6)*orbit.dist;
@@ -1196,14 +1200,15 @@ function drawVSI(x,y,r,fpm){bezel(x,y,r,null);const A=v=>-Math.PI/2+clamp(v/6000
  needle(A(fpm),r*.86,r*.06);hub(r);H.restore();}
 function lamp(x,y,on,col,label,w=46){H.fillStyle=on?col:'#20242a';H.fillRect(x,y,w,16);H.strokeStyle='#3c424b';H.strokeRect(x+.5,y+.5,w-1,15);H.fillStyle=on?'#05080b':'#6b7480';H.font='700 10px system-ui';H.textAlign='center';H.textBaseline='middle';H.fillText(label,x+w/2,y+8.5);}
 let miniMap=null,mapMode=0;
-const lodMeshes=[];let cloudN=0;
+const lodMeshes=[];let cloudN=0,terrainMesh=null,waterMesh=null;
 function applyQuality(){const q=QL[qLevel];
  renderer.setPixelRatio(Math.min(devicePixelRatio,q.pr));resize();
  if(q.sh&&sun.shadow.mapSize.x!==q.sh){sun.shadow.mapSize.set(q.sh,q.sh);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
  const shOK=settings.shadows&&q.sh>0;if(renderer.shadowMap.enabled!==shOK){renderer.shadowMap.enabled=shOK;sun.castShadow=shOK&&sun.intensity>.5;scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});}
  camera.far=q.far;camera.updateProjectionMatrix();
  for(const im of lodMeshes)im.count=Math.max(1,Math.floor(im.userData.full*Math.min(1,q.tr*(im.userData.lod?1/im.userData.lod:1))));
- cloudGeo.instanceCount=Math.floor(cloudN*q.cl);}
+ cloudGeo.instanceCount=Math.floor(cloudN*q.cl);
+ for(const m of [terrainMesh,waterMesh])if(m)m.material=qLevel<=1?m.userData.lo:m.userData.hi;}
 const FPS={acc:0,n:0,v:60,low:0,high:0,lastDown:-99,ceil:4};
 function autoQuality(t){if(settings.gfx!=='auto'||!started||paused||isUI())return;
  if(FPS.v<38){FPS.low++;FPS.high=0;}else if(FPS.v>56){FPS.high++;FPS.low=0;}else{FPS.low=0;FPS.high=0;}
@@ -1339,7 +1344,7 @@ function syncInputs(){wd.value=settings.windDir;wsp.value=settings.windSpd;docum
 document.getElementById('gfxSel').onchange=e=>{settings.gfx=e.target.value;if(settings.gfx!=='auto')qLevel=+settings.gfx;FPS.ceil=4;};
 wd.oninput=()=>{settings.windDir=+wd.value;syncInputs();};wsp.oninput=()=>{settings.windSpd=+wsp.value;syncInputs();};
 document.getElementById('startSel').onchange=e=>settings.start=e.target.value;document.getElementById('invertChk').onchange=e=>settings.invert=e.target.checked;document.getElementById('shadowChk').onchange=e=>settings.shadows=e.target.checked;
-function openMenu(inFlight){paused=true;keys.clear();cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();
+function openMenu(inFlight){const sw=document.getElementById('swWarn');if(/swiftshader|llvmpipe|softpipe|software/i.test(GPU)){sw.style.display='block';sw.innerHTML='⚠ Your browser is drawing 3D <b>without GPU acceleration</b> (software renderer: '+GPU.replace(/[<>]/g,'').slice(0,60)+'). It will be slow. Turn on <b>hardware acceleration</b> in the browser settings (Chrome: Settings → System; check chrome://gpu) and reload.';}paused=true;keys.clear();cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();
  document.getElementById('resumeBtn').style.display=inFlight&&started&&!S.crashed?'':'none';document.getElementById('menu').style.display='flex';}
 function closeMenu(){document.getElementById('menu').style.display='none';try{localStorage.setItem('vibeflight',JSON.stringify(settings));}catch(e){}applyEnv();applyQuality();Snd.init();paused=false;}
 document.getElementById('flyBtn').onclick=()=>{closeMenu();msgs.length=0;resetFlight();started=true;};
@@ -1408,6 +1413,9 @@ function selfTest(){
  settings.start='takeoff';for(const id of ['f16','b738','a388']){settings.plane=id;resetFlight();S.thr=1;let t=0,lo=null;const z0=S.pos.z;
   for(;t<90;t+=h){IN.pitch=(S.V>P.vr)?.6:0;physicsStep(h);if(!S.onGround&&lo===null)lo={t,d:z0-S.pos.z,v:S.V/KT};if(lo&&t>lo.t+15)break;}
   out.push(`takeoff ${id}: liftoff t=${lo?lo.t.toFixed(1):'-'}s dist=${lo?Math.round(lo.d):'-'}m @${lo?lo.v.toFixed(0):'-'}kt; +15s alt=${Math.round(S.pos.y-45)}m crashed=${S.crashed} hull=${S.dmg.hull.toFixed(2)}`);}
+ for(const id of ['b738','a388','lj45','f16']){settings.plane=id;settings.start='takeoff';resetFlight();window.__msgLog=[];S.thr=1;let mx=0;
+  for(let t=0;t<60;t+=h){IN.pitch=S.V>P.vr*.75?1:0;physicsStep(h);mx=Math.max(mx,Math.asin(S.q.clone().invert().invert()&&new V3(0,0,-1).applyQuaternion(S.q).y)*R2D*(S.onGround?1:0));}
+  out.push(`full-pull ${id}: max ground pitch ${mx.toFixed(1)}° (tailstrike ${P.tailStrike}°) tail dmg ${S.dmg.tail.toFixed(2)} airborne ${S.airborne} alt ${Math.round(S.pos.y-45)}m ${[...new Set(window.__msgLog)].filter(x=>/tail|Tail/.test(x)).join(',')}`);}
  console.log('SELFTEST\n'+out.join('\n'));
 }
 </script>
