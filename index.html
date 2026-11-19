@@ -267,7 +267,8 @@ const QL=[{n:'Potato',pr:.4,sh:0,cl:.25,tr:.15,far:35000,spots:1,hud:2,fx:150,pc
 const GFX_NAMES={auto:'Auto',0:'Potato',1:'Low',2:'Medium',3:'High',4:'Ultra'};
 let qLevel=/swiftshader|llvmpipe|softpipe|software/i.test(GPU)?0:/intel|uhd|iris|hd graphics|mali|adreno|powervr|videocore|radeon\(tm\) graphics|vega \d+ graphics/i.test(GPU)?1:3;
 if((navigator.hardwareConcurrency||8)<=4)qLevel=Math.min(qLevel,1);
-{let g='auto';try{g=JSON.parse(localStorage.getItem('vibeflight')||'{}').gfx||'auto';}catch(e){}if(g!=='auto')qLevel=+g;}
+{let g='auto';try{g=JSON.parse(localStorage.getItem('vibeflight')||'{}').gfx||'auto';}catch(e){}const qg=new URLSearchParams(location.search).get('gfx');if(qg!==null)g=qg;if(g!=='auto')qLevel=+g;}
+const SHOTS=location.search.includes('shots');
 const LOGZ=qLevel>=2;
 const renderer=new THREE.WebGLRenderer({canvas,antialias:qLevel>=3,logarithmicDepthBuffer:LOGZ,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio,QL[qLevel].pr));
@@ -1664,7 +1665,7 @@ function buildCockpit(P){
   if(parts.flapLever)parts.flapLever.rotation.x=-.5+S.flapIdx/(P.flaps.length-1)*1.0;
   if(parts.sbLever)parts.sbLever.rotation.x=(S.spoilers||(S.brake&&!S.onGround))?.6:-.3;
   if(parts.master){const on=S.warn&&(performance.now()%600)<350;for(const m of parts.master)m.material.color.setHex(on?0xff2a10:0x331100);}
-  const n=QL[qLevel].hud===1?2:1;for(let i=0;i<n&&live.length;i++){const sc=live[rr++%live.length];sc.draw(sc);sc.t.needsUpdate=true;}}};
+  const n=SHOTS?live.length:(QL[qLevel].hud===1?2:1);for(let i=0;i<n&&live.length;i++){const sc=live[rr++%live.length];sc.draw(sc);sc.t.needsUpdate=true;}}};
 }
 function renderCockpit(){if(camMode!==1||!cockpit||!plane)return;cockpit.update();
  ckCam.fov=camera.fov;ckCam.aspect=camera.aspect;ckCam.updateProjectionMatrix();ckCam.position.copy(camera.position);ckCam.quaternion.copy(camera.quaternion);
@@ -1723,7 +1724,10 @@ setTimeout(()=>{
  openMenu(false);
  window.__vf={S,settings,resetFlight,closeMenu,IN,keys,get camMode(){return camMode},set camMode(v){camMode=v},renderer,scene};
  const qs=new URLSearchParams(location.search);
- if(qs.has('auto')){for(const k of ['plane','weather','time','start'])if(qs.get(k))settings[k]=qs.get(k);if(qs.has('cam'))camMode=+qs.get('cam');document.getElementById('flyBtn').click();if(qs.has('thr'))S.thr=+qs.get('thr');if(qs.has('yaw')){orbit.yaw=+qs.get('yaw');orbit.pitch=+(qs.get('pitch')||0);orbit.dist=+(qs.get('dist')||1);orbit.lastDrag=1e12;}if(qs.has('clean')){msgs.length=0;showInst=!qs.has('noinst');}}
+ if(qs.has('auto')){for(const k of ['plane','weather','time','start'])if(qs.get(k))settings[k]=qs.get(k);if(qs.has('cam'))camMode=+qs.get('cam');document.getElementById('flyBtn').click();if(qs.has('thr'))S.thr=+qs.get('thr');if(qs.has('yaw')){orbit.yaw=+qs.get('yaw');orbit.pitch=+(qs.get('pitch')||0);orbit.dist=+(qs.get('dist')||1);orbit.lastDrag=1e12;}if(qs.has('clean')){msgs.length=0;showInst=!qs.has('noinst');}
+  if(qs.get('gfx'))settings.gfx=qs.get('gfx');
+  if(qs.get('demo')==='taxi'){const B=DEST;S.pos.set(B.x,B.elev+P.gearH,B.z-1250);S.vel.set(0,0,-8);S.q.copy(quatFrom(0,0,0));S.onGround=true;S.airborne=true;S.airT=0;S.gearDown=true;S.gearPos=1;S.thr=0;S.n1=.05;
+   S.atc.start=1;S.atc.land=1;S.time=124;say(`Lakeside Tower: ${ATC.cs}, wind 020 at 6, runway 36, cleared to land.`);atcUpdate(.01);msgs.length=0;camMode=+(qs.get('cam')||0);}}
  if(qs.has('selftest'))setTimeout(selfTest,50);
  if(qs.has('trace')){const t0=performance.now();let lastT=0;const iv=setInterval(()=>{const e=new THREE.Euler().setFromQuaternion(S.q,'YXZ');const tt=(performance.now()-t0)/1000;
   console.log(`TRACE t=${tt.toFixed(2)} pitch=${(e.x*R2D).toFixed(2)} y=${(S.pos.y-AIRPORTS[0].elev).toFixed(3)} vy=${S.vel.y.toFixed(3)} qr=${S.qr.toFixed(3)} gnd=${+S.onGround} airT=${S.airT.toFixed(2)} IN=${IN.pitch.toFixed(2)} thr=${S.thr.toFixed(2)} fps=${FPS.v.toFixed(0)} q=${qLevel} warn=${S.warn} tail=${S.dmg.tail.toFixed(2)}`);if(tt>12)clearInterval(iv);},250);}
