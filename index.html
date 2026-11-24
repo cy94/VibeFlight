@@ -246,7 +246,7 @@ function placeExtraAirports(){
  if(hv){const len=1400,T={x:hv.x,z:hv.z+len/2},F={x:hv.x,z:T.z+2600},a=48*D2R,S0={x:F.x+Math.sin(a)*6500,z:F.z+Math.cos(a)*6500};
   AIRPORTS.push({id:'HVY',name:'Hidden Valley',short:'Hidden Valley',code:'HVY',x:hv.x,z:hv.z,elev:Math.round(hv.avg),len,wid:28,kind:'regional',land:1,ils:false,als:false,
    corr:{slope:.03,lat:[200,600],len:2000,ends:[-1]},path:[T,F,S0],via:F});}
- CARRIER={id:'CVN',name:'CVN Resolute',short:'Resolute',code:'CVN',x:-22000,z:-7500,elev:20,len:330,wid:30,kind:'carrier',land:1,ils:true,gs:3.5,tdzOff:95,corr:null};AIRPORTS.push(CARRIER);
+ CARRIER={id:'CVN',name:'CVN Resolute',short:'Resolute',code:'CVN',x:-22000,z:-7500,elev:20,len:330,wid:30,kind:'carrier',land:1,ils:true,gs:3.5,tdzOff:76,corr:null};AIRPORTS.push(CARRIER);
 }
 placeExtraAirports();
 function surfH(x,z){const c=CARRIER;if(c&&Math.abs(x-c.x)<30&&Math.abs(z-c.z)<168)return c.elev;return groundH(x,z);}
@@ -634,7 +634,7 @@ function buildCarrier(c){
  towers.push(new V3(c.x+27,D+25,c.z+4));
  const X=c.x,Z=c.z,E=D+.3;for(let z=-165;z<=165;z+=15)for(const sx of [-31,31])addLight(X+sx,E,Z+z,'#3a6bff',.6,.08);
  for(let z=-60;z<=165;z+=12)addLight(X,E-.2,Z+z,'#ffffff',.5,.08);for(let x=-14;x<=14;x+=2)addLight(X+x,E,Z+168,'#ff3020',.9,.2);
- for(let i=-3;i<=3;i++)if(i)addLight(X-29+i*1.2,D+3,Z+165-95,'#3cff6a',.9,.6);
+ for(let i=-3;i<=3;i++)if(i)addLight(X-29+i*1.2,D+3,Z+165-76,'#3cff6a',.9,.6);
  addLight(X,c.elev+20,Z+4,'#ff2010',1.3,.6,2,0);
 }
 function buildPapiPoints(){
@@ -1031,7 +1031,7 @@ function destroy(reason){if(S.crashed)return;S.crashed=true;S.crashT=0;S.thr=0;S
  S.r+=(Math.random()-.5)*1.2;S.p+=(Math.random()-.5)*1.5;}
 // ============================================================ CAT III autopilot / autoland + radio-altitude callouts
 function apChime(seq){if(!Snd.ctx||Snd.muted)return;const C=Snd.ctx;seq.forEach(([f,t0,d])=>{const o=C.createOscillator(),g=C.createGain(),t=C.currentTime+t0;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(Snd.master);o.start(t);o.stop(t+d+.05);});}
-function apEngage(){if(DEST.ils===false){msg(`No ILS at ${DEST.short} — autoland unavailable, fly it visually`,3);return;}if(!P.model.windows){msg('No autoland on this aircraft (airliners and Learjet only)',2.5);return;}if(S.onGround||S.crashed){msg('Engage the autopilot in flight',2);return;}
+function apEngage(){if(DEST.ils===false){msg(`No ILS at ${DEST.short} — autoland unavailable, fly it visually`,3);return;}const acls=DEST.kind==='carrier'&&P.id==='f18';if(!P.model.windows&&!acls){msg('No autoland on this aircraft (airliners and Learjet only; F/A-18 has ACLS for the carrier)',3);return;}if(acls&&!S.hook)msg('ACLS: lower the hook (J)!',4,'#ffb020');if(acls&&env.turb>1)msg('ACLS: turbulence beyond limits — expect a ramp strike or bolter, be ready to take over',5,'#ff5a4d');if(S.onGround||S.crashed){msg('Engage the autopilot in flight',2);return;}
  const hdg=headingOf(S.q);S.ap={on:true,at:true,locCap:false,gsCap:false,flare:false,retard:false,rollout:false,altT:S.pos.y,hdgT:hdg,thrI:S.thr};
  msg('AUTOPILOT ON · APPROACH ARMED',3,'#3cff6a');apChime([[880,0,.25]]);const xw=Math.abs(settings.windSpd*Math.sin(settings.windDir*D2R));if(xw>27)msg(`AUTOLAND: crosswind ${Math.round(xw)} kt exceeds the 27 kt limit`,5,'#ffb020');}
 function apOff(reason){if(!S.ap||!S.ap.on)return;S.ap.on=false;msg('AUTOPILOT DISCONNECT'+(reason?' — '+reason:''),3,'#ffb020');apChime([[1250,0,.12],[1050,.14,.12],[1250,.28,.12],[1050,.42,.2]]);}
@@ -1052,15 +1052,17 @@ function apControl(dt){const a=S.ap,B=DEST;if(S.crashed||S.ditched){a.on=false;r
  if(a.gsCap&&!a.flare)a.gsI=clamp((a.gsI||0)+(gsAlt-S.pos.y)*dt,-40,40);
  let vsCmd;if(a.gsCap)vsCmd=-S.V*Math.tan(RI.gs*D2R)+(gsAlt-S.pos.y)*.16+(a.gsI||0)*.04;else if((a.locCap||inZone)&&along>0&&gsDev>.35){vsCmd=clamp(-S.V*Math.tan(RI.gs*D2R)-(S.pos.y-gsAlt)*.04,-16,-3);a.altT=S.pos.y;}else vsCmd=clamp((a.altT-S.pos.y)*.1,-6,6);
  const Vp=a.Vs===undefined?S.V:a.Vs;a.Vs=lerp(Vp,S.V,Math.min(1,dt*.5));a.acc=lerp(a.acc||0,(a.Vs-Vp)/dt,Math.min(1,dt*.5));
- const flareH=11+P.len*.2+Math.max(0,P.mass-1e5)/4e4;if(a.gsCap&&agl<flareH&&!a.flare){a.flare=true;a.flareV=S.vel.y;}
+ const carrier=B.kind==='carrier',flareH=carrier?-1:11+P.len*.2+Math.max(0,P.mass-1e5)/4e4;if(a.gsCap&&agl<flareH&&!a.flare){a.flare=true;a.flareV=S.vel.y;}
  if(a.flare)vsCmd=Math.min(-.7,a.flareV*clamp(agl/flareH,0,1)*.85);
  if(!S.onGround){const V=Math.max(30,S.V),gamC=Math.asin(clamp(vsCmd/V,-.5,.5)),gam=Math.asin(clamp(S.vel.y/V,-.9,.9));
   const qdes=(gamC-gam)*(a.flare?3.4:1.2)-S.qr*.45;IN.pitch=clamp(qdes/(P.pitchRate*D2R*qn),-1,1);
   IN.yaw=a.flare&&agl<5?clamp(-(((hdg-RI.hdg+540)%360)-180)*.2,-1,1):0;}
  // autothrottle
- if(a.at&&!S.onGround){if(a.flare&&agl<8){S.thr=0;if(!a.retard){a.retard=true;callout('retard',true);}}
+ if(a.at&&!S.onGround){if(!carrier&&a.flare&&agl<8){S.thr=0;if(!a.retard){a.retard=true;callout('retard',true);}}
   else{const [fcl]=flapCL(),vT=Math.sqrt(2*P.W/(1.225*P.S*(P.CL0+P.CLa*P.aApp+fcl)))+5*KT;const err=vT-a.Vs;a.thrI=clamp((a.thrI??S.thr)+err*.012*dt,0,1);const want=clamp(a.thrI+err*.035-a.acc*.25,0,1);S.thr=clamp(S.thr+clamp(want-S.thr,-.12*dt,.12*dt),0,1);S.brake=a.Vs>vT+18*KT&&S.thr<.03;}}
  // rollout: hold the centerline, idle thrust, then hand back
+ if(carrier&&S.onGround&&S.airborne){if(S.trap){S.thr=0;IN.pitch=0;if(Math.hypot(S.vel.x,S.vel.z)<2)apOff('trapped');}else{S.thr=1;IN.pitch=.6;a.bolter=true;}return;}
+ if(carrier&&a.bolter&&!S.onGround){S.thr=1;IN.pitch=clamp((8-S.vel.y)*.08,-.3,.6);IN.roll=0;if(agl>60)apOff('bolter — go around');return;}
  if(S.onGround&&S.airborne){if(!a.rollout){a.rollout=true;msg('ROLLOUT',2,'#3cff6a');}S.thr=0;IN.pitch=0;IN.roll=0;
   const he=((hdg-RI.hdg+540)%360)-180;IN.yaw=clamp(-he*.3-xErr*.06-vlat*.22,-1,1);if(Math.hypot(S.vel.x,S.vel.z)<30*KT)apOff('rollout complete');}}
 const CALLS=[[2500,'twenty five hundred'],[1000,'one thousand'],[500,'five hundred'],[100,'one hundred'],[50,'fifty'],[40,'forty'],[30,'thirty'],[20,'twenty'],[10,'ten']];
@@ -1427,7 +1429,7 @@ function updateVisuals(dt,t){
  const dbs=renderer.getDrawingBufferSize(new THREE.Vector2());lightMat.uniforms.uScale.value=dbs.y/(2*Math.tan(camera.fov*D2R/2));
  // PAPI colours
  if(ballPts&&CARRIER){const c=CARRIER,R=rwyInfo(c),al=Math.max(1,(S.pos.z-R.tdzZ)*R.L),dev=Math.atan2(S.pos.y-P.gearH-c.elev,al)*R2D-R.gs,off=clamp(dev/.6,-1.6,1.6);
-  const pa=ballPts.geometry.attributes.position;pa.setXYZ(0,c.x-29,c.elev+3+off*1.2,c.z+165-95);pa.needsUpdate=true;ballPts.geometry.attributes.lcol.setXYZ(0,1,off<-1?.15:.62,off<-1?.1:.05);ballPts.geometry.attributes.lcol.needsUpdate=true;}
+  const pa=ballPts.geometry.attributes.position;pa.setXYZ(0,c.x-29,c.elev+3+off*1.2,c.z+165-76);pa.needsUpdate=true;ballPts.geometry.attributes.lcol.setXYZ(0,1,off<-1?.15:.62,off<-1?.1:.05);ballPts.geometry.attributes.lcol.needsUpdate=true;}
  if(papiPoints){const col=papiPoints.geometry.attributes.lcol;let i=0;for(const p of papis)for(const l of p){const ang=Math.atan2(S.pos.y-l.y,Math.hypot(S.pos.x-l.x,S.pos.z-l.z))*R2D;
   const white=ang>l.ang;col.setXYZ(i++,1,white?1:.08,white?1:.05);}col.needsUpdate=true;}
  for(const w of windsocks){const wv=env.wind.clone().add(_turb);w.rotation.y=Math.atan2(-wv.z,wv.x);w.rotation.z=-(1-clamp(wv.length()/8,0,1))*1.2;}
@@ -1987,6 +1989,9 @@ function selfTest(){
  {settings.plane='lj45';settings.start='ridgeEfato';Object.assign(settings,SCEN.ridgeEfato.set);applyEnv();resetFlight();S.thr=1;window.__msgLog=[];let t=0,minClr=1e9;const RB=AIRPORTS.find(a=>a.id==='RBK');
   for(;t<90;t+=h){IN.pitch=S.V>P.vr?clamp((P.vref*1.25-S.V)*-.03,-.3,.6):0;IN.yaw=S.engOut?.55:0;IN.roll=clamp(-new THREE.Euler().setFromQuaternion(S.q,'YXZ').z*R2D*-.05,-1,1);if(S.airborne&&S.pos.y-P.gearH-RB.elev>40){S.gearDown=false;}physicsStep(h);if(S.airborne&&!S.onGround)minClr=Math.min(minClr,S.pos.y-surfH(S.pos.x,S.pos.z));if(S.crashed)break;}
   out.push(`RBK engine failure after takeoff Learjet: t=${t.toFixed(0)} engOut=${S.engOut} crashed=${S.crashed} alt above field=${Math.round(S.pos.y-RB.elev)}m minTerrainClear=${Math.round(minClr)}m`);}
+ for(const wx of ['scattered','overcast']){settings.plane='f18';settings.start='carrier';Object.assign(settings,SCEN.carrier.set);settings.weather=wx;applyEnv();resetFlight();S.hook=true;apEngage();window.__msgLog=[];let t=0;
+  for(;t<200;t+=h){physicsStep(h);if(S.crashed||S.ditched||(S.onGround&&S.airborne&&Math.hypot(S.vel.x,S.vel.z)<1))break;}
+  out.push(`ACLS carrier F/A-18 (${wx}): t=${t.toFixed(0)} trap=${S.trap?'wire '+S.trap.wire:'-'} crashed=${S.crashed} ditched=${S.ditched} touch=${S.touch?S.touch.fpm:'-'}fpm hull=${S.dmg.hull.toFixed(2)} | ${[...new Set(window.__msgLog)].filter(x=>/TRAP|BOLTER|Touch|ramp/i.test(x)).join(' / ')}`);}
  settings.start='takeoff';settings.weather='clear';settings.windDir=20;settings.windSpd=6;applyEnv();
  console.log('SELFTEST\n'+out.join('\n'));
 }
