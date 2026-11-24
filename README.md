@@ -65,6 +65,14 @@ Press **F1** in game for the full key list.
 - Procedural island: hills, snow-capped mountains, a lake, farmland, forests, a city with lit windows at night, a town, road, wind turbines, a radio mast and a lighthouse.
 - Weather: clear, scattered, overcast, rain, thunderstorm (with lightning and thunder), fog and snow, plus wind direction and speed. Time of day: dawn, midday, sunset or night.
 
+**Scenarios (menu → Scenario)**
+- **Ridgeback Mountain (RBK):** a 1.6 km strip at about 800 m elevation, reached through a mountain valley. No ILS, just PAPI lights.
+- **Harbor Point (HBP):** a southbound approach over the sea to a runway that starts at the seawall, in gusty crosswinds.
+- **Frost Lake ice strip (FRL):** braking action poor on the ice, so use reverse thrust.
+- **Carrier trap on CVN Resolute:** F/A-18 with tailhook (J), four arrestor wires and the meatball glideslope light. Miss the wires and it's a bolter; fly in low and it's a ramp strike.
+- **Failures:** engine failure on short final (asymmetric thrust), flapless approach, a main gear that won't extend, and windshear on short final.
+- **CAT III autoland (Y):** for the airliners, plus a ☠ worst-case preset with zero visibility, night and a 30 kt crosswind.
+
 **Cameras**: chase, cockpit, fly-by and tower, with mouse-drag look-around and zoom.
 
 **Sound**: engine and turbine, afterburner, wind, rain, tyre screech on touchdown, runway rumble, gear motor and clunk, warning tones and thunder.
