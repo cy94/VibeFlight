@@ -927,11 +927,11 @@ function apControl(dt){const a=S.ap,B=DEST;if(S.crashed||S.ditched){a.on=false;r
  if(!a.locCap&&inZone&&(Math.abs(loc)<2.5||Math.abs(xErr)<90)){a.locCap=true;msg('LOC captured',2,'#3cff6a');}
  if(a.locCap&&!a.gsCap&&along>0&&Math.abs(gsDev)<.35){a.gsCap=true;msg('G/S captured · LAND 3',2.5,'#3cff6a');if(S.gearPos<.98||S.flapIdx<P.landFlap)msg('AUTOLAND: lower the gear (G) and set landing flaps (V)',6,'#ffb020');}
  // lateral: track the localizer (position + drift terms handle crosswind)
- const trk=Math.atan2(S.vel.x,-S.vel.z)*R2D;let tgtRoll;if(a.locCap){const near=agl<250;tgtRoll=clamp(-xErr*(near?.05:.03)-S.vel.x*(near?.9:.6),-15,15);}
+ const trk=Math.atan2(S.vel.x,-S.vel.z)*R2D;let tgtRoll;if(a.locCap){const near=agl<250,fin=agl<60;tgtRoll=clamp(-xErr*(fin?.08:near?.05:.03)-S.vel.x*(fin?1.2:near?.9:.6),-15,15);}
  else if(inZone){const want=clamp(-xErr*.02,-30,30);tgtRoll=clamp((want-trk)*1.5,-25,25);}
  else{const he=((a.hdgT-hdg+540)%360)-180;tgtRoll=clamp(he*1.5,-25,25);}
  const qn=clamp(.5*1.225*S.V*S.V/P.qRef,.25,1);
- if(!S.onGround){if(agl<14)tgtRoll=clamp(tgtRoll,-9,9);IN.roll=clamp((tgtRoll-roll)*2.2/(P.rollRate*qn),-1,1);}
+ if(!S.onGround){if(agl<14)tgtRoll=clamp(tgtRoll,-11,11);IN.roll=clamp((tgtRoll-roll)*2.2/(P.rollRate*qn),-1,1);}
  // vertical
  if(a.locCap&&!a.gsCap&&along<-150){apOff('glideslope not captured');msg('GO AROUND — too high for the glideslope',5,'#ff5a4d');return;}
  if(a.gsCap&&!a.flare)a.gsI=clamp((a.gsI||0)+(gsAlt-S.pos.y)*dt,-40,40);
@@ -963,7 +963,7 @@ function physicsStep(dt){
  const wf=clamp(Math.pow(Math.max(agl,1)/300,.22),.35,1.2);
  const tk=env.turb*(agl<1500?1:.6)*4;
  _turb.set(fbm(simT*.35,1.3,3),fbm(simT*.45,7.1,3)*.7*clamp(agl/80,.12,1),fbm(simT*.35,13.7,3)).multiplyScalar(tk);
- _wind.copy(env.wind).multiplyScalar(wf).add(_turb);
+ _turb.x*=wf;_turb.z*=wf;_wind.copy(env.wind).multiplyScalar(wf).add(_turb);
  _va.copy(s.vel).sub(_wind);const V=_va.length();
  _qi.copy(s.q).invert();_vb.copy(_va).applyQuaternion(_qi);
  let alpha=0,beta=0;if(V>2){alpha=Math.atan2(-_vb.y,-_vb.z);beta=Math.asin(clamp(_vb.x/V,-1,1));}
@@ -1013,7 +1013,7 @@ function physicsStep(dt){
  if(s.stalled){if(!s.wingDrop)s.wingDrop=(Math.random()<.5?-1:1)*(.4+Math.random()*.5);cP+=s.wingDrop*Math.min(1.2,(Math.abs(alpha)-st)*6+.2);}else s.wingDrop=0;
  let cR=IN.yaw*P.yawRate*D2R*eff*tailA+beta*P.yawStab*Math.min(1,qn+.15)*(1-.5*D.tail);
  const gnd=s.onGround||s.airT<.35;
- if(!gnd){cP+=fbm(simT*1.3,41,2)*env.turb*.25;cQ+=fbm(simT*1.1,57,2)*env.turb*.06;}
+ if(!gnd){const tsz=clamp(22/P.len,.3,1);cP+=fbm(simT*1.3,41,2)*env.turb*.25*tsz;cQ+=fbm(simT*1.1,57,2)*env.turb*.06*tsz;}
  if(s.crashed&&!s.onGround){cP=s.p;cR=s.r;}
  if(gnd){
   const gsp=Math.hypot(s.vel.x,s.vel.z);
@@ -1834,8 +1834,8 @@ function selfTest(){
   for(const l of ATC.log)out.push('   ATC> '+l.text);paused=true;started=false;}
  for(const [nm,st,id,wd,ws] of [['autoland 737 storm xwind15','approach','b738',270,15],['autoland A380 storm xwind20','approach','a388',90,20],['autoland WORST A380 xwind30','approach','a388',270,30],['autoland WORST 737 xwind30','approach','b738',90,30],['autoland WORST 777 xwind30','approach','b77w',270,30],['autoland WORST A320 xwind30','approach','a20n',270,30]]){
   settings.plane=id;settings.start=st;settings.weather=nm.includes('WORST')?'worst':'storm';settings.windDir=wd;settings.windSpd=ws;applyEnv();resetFlight();apEngage();S.abSet=3;S.abArmed=true;window.__msgLog=[];let t=0;
-  let lastThr=S.thr;window.__thrSw=0;for(;t<400;t+=h){if(S.ap.gsCap&&S.gearPos<.5){S.gearDown=true;S.flapIdx=P.landFlap;}physicsStep(h);if(S.ap.on&&!S.ap.flare)window.__thrSw+=Math.abs(S.thr-lastThr);lastThr=S.thr;{const ag=S.pos.y-P.gearH-Math.max(groundH(S.pos.x,S.pos.z),0);if(false&&(nm.includes('WORST 737')&&ag<45&&!S.ap.rollout&&Math.round(t*120)%30===0)||(st==='air'&&Math.round(t*120)%1200===0))out.push(`   ${nm.slice(9,20)} t${t.toFixed(1)} z${Math.round(S.pos.z-DEST.z)} x${Math.round(S.pos.x-DEST.x)} agl${ag.toFixed(1)} vs${S.vel.y.toFixed(2)} V${(S.V/KT).toFixed(0)} pit${(new THREE.Euler().setFromQuaternion(S.q,'YXZ').x*R2D).toFixed(1)} IN${IN.pitch.toFixed(2)} thr${S.thr.toFixed(2)} cap${+S.ap.locCap}${+S.ap.gsCap} fl${+S.ap.flare} gnd${+S.onGround} gH${Math.round(groundH(S.pos.x,S.pos.z))}`);}if(st==='air'&&0&&Math.round(t*120)%1200===0){const xE=S.pos.x-DEST.x;out.push(`   air t${t.toFixed(0)} x${Math.round(xE)} z${Math.round(S.pos.z-DEST.z)} alt${Math.round(S.pos.y)} V${(S.V/KT).toFixed(0)} hdg${Math.round(headingOf(S.q))} loc${(Math.atan2(xE,S.pos.z-(DEST.z-DEST.len/2))*R2D).toFixed(1)} cap${+S.ap.locCap}${+S.ap.gsCap} on${+S.ap.on} a${(S.alpha*R2D).toFixed(1)}`);}if(S.crashed||(S.onGround&&S.airborne&&Math.hypot(S.vel.x,S.vel.z)<1))break;}
-  out.push(`${nm}: t=${t.toFixed(0)}s crashed=${S.crashed} landed=${S.landed} hull=${S.dmg.hull.toFixed(2)} touch=${S.touch?S.touch.fpm:'-'}fpm td@x${S.touch?Math.round(S.touch.x):'-'},z${S.touch?Math.round(S.touch.z):'-'} onRwy=${!!(S.touch&&S.touch.rw)} thrSwing=${(window.__thrSw||0).toFixed(2)} pos=${Math.round(S.pos.x-DEST.x)},${Math.round(S.pos.z-DEST.z)} | ${[...new Set(window.__msgLog)].filter(x=>/Touch|tip|Hard|gear|Tail|rough/i.test(x)).join(' / ').slice(0,200)}`);}
+  let lastThr=S.thr;window.__thrSw=0;let maxX=0;for(;t<400;t+=h){if(S.onGround&&S.airborne)maxX=Math.max(maxX,Math.abs(S.pos.x-DEST.x));if(S.ap.gsCap&&S.gearPos<.5){S.gearDown=true;S.flapIdx=P.landFlap;}physicsStep(h);if(S.ap.on&&!S.ap.flare)window.__thrSw+=Math.abs(S.thr-lastThr);lastThr=S.thr;{const ag=S.pos.y-P.gearH-Math.max(groundH(S.pos.x,S.pos.z),0);if(false&&(nm.includes('WORST 777')&&ag<40&&!S.ap.rollout&&Math.round(t*120)%24===0)||(st==='air'&&Math.round(t*120)%1200===0))out.push(`   ${nm.slice(9,20)} t${t.toFixed(1)} z${Math.round(S.pos.z-DEST.z)} x${Math.round(S.pos.x-DEST.x)} agl${ag.toFixed(1)} vs${S.vel.y.toFixed(2)} V${(S.V/KT).toFixed(0)} pit${(new THREE.Euler().setFromQuaternion(S.q,'YXZ').x*R2D).toFixed(1)} IN${IN.pitch.toFixed(2)} thr${S.thr.toFixed(2)} cap${+S.ap.locCap}${+S.ap.gsCap} fl${+S.ap.flare} gnd${+S.onGround} gH${Math.round(groundH(S.pos.x,S.pos.z))}`);}if(st==='air'&&0&&Math.round(t*120)%1200===0){const xE=S.pos.x-DEST.x;out.push(`   air t${t.toFixed(0)} x${Math.round(xE)} z${Math.round(S.pos.z-DEST.z)} alt${Math.round(S.pos.y)} V${(S.V/KT).toFixed(0)} hdg${Math.round(headingOf(S.q))} loc${(Math.atan2(xE,S.pos.z-(DEST.z-DEST.len/2))*R2D).toFixed(1)} cap${+S.ap.locCap}${+S.ap.gsCap} on${+S.ap.on} a${(S.alpha*R2D).toFixed(1)}`);}if(S.crashed||(S.onGround&&S.airborne&&Math.hypot(S.vel.x,S.vel.z)<1))break;}
+  out.push(`${nm}: t=${t.toFixed(0)}s crashed=${S.crashed} landed=${S.landed} hull=${S.dmg.hull.toFixed(2)} touch=${S.touch?S.touch.fpm:'-'}fpm td@x${S.touch?Math.round(S.touch.x):'-'},z${S.touch?Math.round(S.touch.z):'-'} onRwy=${!!(S.touch&&S.touch.rw)} rolloutMaxX=${maxX.toFixed(1)}m ${S.touch&&S.touch.rw&&maxX<20&&!S.crashed?'PASS':'FAIL'} pos=${Math.round(S.pos.x-DEST.x)},${Math.round(S.pos.z-DEST.z)} | ${[...new Set(window.__msgLog)].filter(x=>/Touch|tip|Hard|gear|Tail|rough/i.test(x)).join(' / ').slice(0,200)}`);}
  settings.weather='clear';settings.windDir=20;settings.windSpd=6;applyEnv();
  console.log('SELFTEST\n'+out.join('\n'));
 }
