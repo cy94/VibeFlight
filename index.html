@@ -52,7 +52,7 @@ details summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:13px}
   <div id="planeCards" class="cards"></div>
   <div class="row">
    <div>
-    <h3>Weather</h3><div id="weatherBtns" class="seg"></div>
+    <h3>Weather</h3><div id="weatherBtns" class="seg"></div><div class="seg" style="margin-top:8px"><button id="worstBtn" style="border-color:#a4502a;background:#3a1d12">☠ Worst case: zero-vis storm · night · 30 kt crosswind · A380</button></div>
     <h3>Time of day</h3><div id="timeBtns" class="seg"></div>
    </div>
    <div>
@@ -146,7 +146,7 @@ const PLANES=[
   gear:{y0:-.55,nose:{z:-6.4,r:.26},main:{x:1.3,z:.9,r:.36}},eye:[-.3,.55,-6.6],lightSize:1.3}},
 {id:'a20n',name:'Airbus A320neo',role:'Narrow-body airliner · sidestick FBW',
  mass:64000,S:122.6,span:35.8,thrust:240000,ab:0,CL0:0.25,CLa:5.6,stall:15,aoaLimit:13,CD0:0.021,K:0.042,gearCD:0.022,sbCD:0.035,
- mcrit:0.78,waveK:4,maxG:2.5,pitchRate:7,rollRate:30,yawRate:6,yawStab:1.4,resp:2.4,gearH:3.6,tailStrike:11.5,maxSink:3.6,
+ mcrit:0.78,waveK:4,maxG:2.5,pitchRate:7,rollRate:30,yawRate:6,yawStab:1.4,resp:2.8,gearH:3.6,tailStrike:11.5,maxSink:3.6,
  flaps:[{n:'0',deg:0,cl:0,cd:0,vmax:999},{n:'1+F',deg:10,cl:.25,cd:.006,vmax:215},{n:'2',deg:15,cl:.45,cd:.015,vmax:200},{n:'3',deg:20,cl:.65,cd:.03,vmax:185},{n:'FULL',deg:35,cl:.85,cd:.055,vmax:177}],
  toFlap:1,asiMax:400,vmo:350,mmo:0.82,gearTime:7,flapRate:4,
  model:{color:'#f4f5f7',accent:'#c8102e',fus:{prof:[[0,18.8],[.8,18.2],[1.4,17.2],[1.85,15.6],[1.98,13.5],[1.98,-10],[1.75,-13.5],[1.2,-16.6],[.45,-18.8]],xs:1,ys:1.05},
@@ -158,7 +158,7 @@ const PLANES=[
   gear:{y0:-1.5,nose:{z:-13.8,r:.42,two:true},main:{x:3.8,z:2.2,r:.6,two:true}},eye:[-.5,1.0,-16.2],lightSize:2.2}},
 {id:'b77w',name:'Boeing 777-300ER',role:'Wide-body twinjet · big & stable',
  mass:235000,S:436.8,span:64.8,thrust:1026000,ab:0,CL0:0.25,CLa:5.7,stall:15,aoaLimit:0,CD0:0.02,K:0.04,gearCD:0.02,sbCD:0.03,
- mcrit:0.84,waveK:4,maxG:2.5,pitchRate:5,rollRate:22,yawRate:4,yawStab:1.2,resp:1.6,gearH:5.6,tailStrike:9,maxSink:3.3,
+ mcrit:0.84,waveK:4,maxG:2.5,pitchRate:5,rollRate:22,yawRate:4,yawStab:1.2,resp:2.0,gearH:5.6,tailStrike:9,maxSink:3.3,
  flaps:[{n:'UP',deg:0,cl:0,cd:0,vmax:999},{n:'1',deg:1,cl:.12,cd:.003,vmax:255},{n:'5',deg:5,cl:.30,cd:.008,vmax:235},{n:'15',deg:15,cl:.50,cd:.018,vmax:215},{n:'20',deg:20,cl:.62,cd:.026,vmax:195},{n:'25',deg:25,cl:.78,cd:.04,vmax:185},{n:'30',deg:30,cl:.92,cd:.06,vmax:170}],
  toFlap:2,asiMax:400,vmo:330,mmo:0.89,gearTime:9,flapRate:3,
  model:{color:'#f3f4f6',accent:'#0b3d7a',fus:{prof:[[0,37],[1.4,36],[2.4,34.4],[2.95,32],[3.1,29],[3.1,-22],[2.7,-28],[1.8,-33.5],[.7,-37]],xs:1,ys:1.04},
@@ -170,7 +170,7 @@ const PLANES=[
   gear:{y0:-2.6,nose:{z:-30,r:.6,two:true},main:{x:5.5,z:3,r:.8,two:true}},eye:[-.8,1.5,-34.6],lightSize:3.5}},
 {id:'b744',name:'Boeing 747-400',role:'Four-engine jumbo · queen of the skies',
  mass:255000,S:541,span:64.4,thrust:1008000,ab:0,CL0:0.24,CLa:5.6,stall:15,aoaLimit:0,CD0:0.022,K:0.042,gearCD:0.022,sbCD:0.03,
- mcrit:0.85,waveK:4,maxG:2.5,pitchRate:5,rollRate:22,yawRate:4,yawStab:1.2,resp:1.5,gearH:5.4,tailStrike:11,maxSink:3.3,
+ mcrit:0.85,waveK:4,maxG:2.5,pitchRate:5,rollRate:22,yawRate:4,yawStab:1.2,resp:1.8,gearH:5.4,tailStrike:11,maxSink:3.3,
  flaps:[{n:'UP',deg:0,cl:0,cd:0,vmax:999},{n:'1',deg:1,cl:.10,cd:.003,vmax:280},{n:'5',deg:5,cl:.28,cd:.008,vmax:260},{n:'10',deg:10,cl:.42,cd:.014,vmax:240},{n:'20',deg:20,cl:.62,cd:.025,vmax:230},{n:'25',deg:25,cl:.80,cd:.04,vmax:205},{n:'30',deg:30,cl:.92,cd:.058,vmax:180}],
  toFlap:3,asiMax:400,vmo:365,mmo:0.92,gearTime:9,flapRate:3,
  model:{color:'#f5f5f2',accent:'#b8862b',fus:{prof:[[0,35.3],[1.5,34.2],[2.6,32],[3.15,28.5],[3.25,22],[3.25,-20],[2.85,-26],[1.8,-31.5],[.6,-35.3]],xs:1,ys:1.05},
@@ -183,7 +183,7 @@ const PLANES=[
   gear:{y0:-2.5,nose:{z:-27,r:.6,two:true},main:{x:5.2,z:4,r:.8,two:true}},eye:[-.8,4.6,-28.6],lightSize:3.5}},
 {id:'a388',name:'Airbus A380-800',role:'Double-deck superjumbo · the biggest',
  mass:390000,S:845,span:79.8,thrust:1244000,ab:0,CL0:0.25,CLa:5.6,stall:15,aoaLimit:13,CD0:0.021,K:0.04,gearCD:0.02,sbCD:0.03,
- mcrit:0.85,waveK:4,maxG:2.5,pitchRate:5,rollRate:20,yawRate:4,yawStab:1.2,resp:1.5,gearH:6.0,tailStrike:11,maxSink:3.3,
+ mcrit:0.85,waveK:4,maxG:2.5,pitchRate:5,rollRate:20,yawRate:4,yawStab:1.2,resp:2.3,gearH:6.0,tailStrike:11,maxSink:3.3,
  flaps:[{n:'0',deg:0,cl:0,cd:0,vmax:999},{n:'1+F',deg:8,cl:.25,cd:.006,vmax:222},{n:'2',deg:17,cl:.45,cd:.015,vmax:220},{n:'3',deg:26,cl:.65,cd:.03,vmax:196},{n:'FULL',deg:33,cl:.85,cd:.05,vmax:182}],
  toFlap:1,asiMax:400,vmo:340,mmo:0.89,gearTime:9,flapRate:3,
  model:{color:'#f4f5f7',accent:'#1b2a6b',fus:{prof:[[0,36.4],[1.6,35.2],[2.7,33.2],[3.4,30.2],[3.6,26],[3.6,-22],[3.1,-28],[2.0,-33.5],[.7,-36.4]],xs:1,ys:1.33},
@@ -234,6 +234,7 @@ function height(x,z){
  for(const ap of AIRPORTS){
   const dx=Math.max(ap.x-350-x,x-(ap.x+750),0),dz=Math.max(Math.abs(z-ap.z)-(ap.len/2+450),0);
   h=lerp(ap.elev,h,smooth(0,700,Math.hypot(dx,dz)));
+  const lat=smooth(450,1000,Math.abs(x-ap.x));for(const dir of [1,-1]){const d=dir*(z-ap.z)-ap.len/2;if(d>0&&d<7000){const cap=ap.elev+d*.022;if(h>cap)h=lerp(cap,h,lat);}}
  }
  return h;
 }
@@ -469,12 +470,13 @@ function atcUpdate(dt){if(!started||paused||!plane)return;const a=S.atc;a.t+=dt;
  const gs=Math.hypot(S.vel.x,S.vel.z),agl=S.pos.y-Math.max(groundH(S.pos.x,S.pos.z),0);
  if(!a.start&&a.t>1.5){a.start=1;
   if(settings.start==='takeoff')say(`Hillcrest Tower: ${cs}, wind ${w}, runway 36, cleared for takeoff.`,`${css}, Hillcrest tower, wind ${ws}, runway three six, cleared for takeoff.`);
-  else if(settings.start==='approach'){a.land=1;say(`Lakeside Tower: ${cs}, wind ${w}, runway 36, cleared to land.`,`${css}, Lakeside tower, wind ${ws}, runway three six, cleared to land.`);}
+  else if(settings.start==='approach'){a.land=1;const c3=settings.weather==='worst';say(`Lakeside Tower: ${cs}, wind ${w}${c3?', RVR 300 m, CAT III in use':''}, runway 36, cleared to land.`,`${css}, Lakeside tower, wind ${ws}${c3?', R V R three hundred meters, cat three in use':''}, runway three six, cleared to land.`);
+   if(settings.weather==='worst')msg('Zero visibility — engage AUTOLAND with Y',6,'#ffb020');}
   else say(`Lakeside Approach: ${cs}, radar contact. Proceed direct Lakeside, expect ILS runway 36.`,`${css}, Lakeside approach, radar contact. Proceed direct Lakeside, expect I L S runway three six.`);}
  if(S.airborne&&!S.onGround&&!a.dep&&agl>200&&settings.start==='takeoff'){a.dep=1;say(`Hillcrest Tower: ${cs}, contact Lakeside Approach 119.2. Good day.`,`${css}, contact Lakeside approach, one one niner decimal two. Good day.`);}
  const dB=Math.hypot(S.pos.x-B.x,S.pos.z-(B.z+B.len/2));
  if(a.dep&&!a.appr&&!S.onGround&&dB<11000){a.appr=1;say(`Lakeside Approach: ${cs}, radar contact. Descend 2,000 ft, cleared ILS runway 36.`,`${css}, Lakeside approach, radar contact. Descend two thousand feet, cleared I L S runway three six.`);}
- if(a.start&&!a.land&&!S.onGround&&S.airborne&&dB<6500){a.land=1;say(`Lakeside Tower: ${cs}, wind ${w}, runway 36, cleared to land.`,`${css}, Lakeside tower, wind ${ws}, runway three six, cleared to land.`);}
+ if(a.start&&!a.land&&!S.onGround&&S.airborne&&dB<6500){a.land=1;const c3=settings.weather==='worst';say(`Lakeside Tower: ${cs}, wind ${w}${c3?', RVR 300 m, CAT III in use':''}, runway 36, cleared to land.`,`${css}, Lakeside tower, wind ${ws}${c3?', R V R three hundred meters, cat three in use':''}, runway three six, cleared to land.`);}
  // after landing: exit + taxi to stand
  const rw=onRunway(S.pos.x,S.pos.z);
  if(S.onGround&&S.airborne&&rw&&!a.taxi&&gs<38){a.taxi=1;a.ap=rw;a.taxiT=a.t;
@@ -781,6 +783,7 @@ const WEATHER={
  rain:{name:'Rain',cover:1,base:600,fog:4.2e-4,turb:.7,dim:.65,dark:.78,precip:'rain'},
  storm:{name:'Thunderstorm',cover:1,base:450,fog:7.5e-4,turb:1.5,dim:.88,dark:.42,precip:'rain',lightning:true,heavy:true},
  fog:{name:'Fog',cover:.2,base:900,fog:1.2e-3,turb:.05,dim:.25,precip:null},
+ worst:{name:'Zero-vis storm (CAT IIIc)',cover:1,base:110,fog:3.2e-3,turb:1.9,dim:.93,dark:.33,precip:'rain',lightning:true,heavy:true},
  snow:{name:'Snow',cover:1,base:650,fog:5.5e-4,turb:.4,dim:.55,dark:.85,precip:'snow'},
 };
 const TIMES={
@@ -877,9 +880,9 @@ function flapCL(){const f=P.flaps;const d=S.flapDeg;for(let i=0;i<f.length-1;i++
 function resetFlight(){
  P=PLANES.find(p=>p.id===settings.plane)||PLANES[0];
  if(plane)scene.remove(plane.group);plane=buildPlane(P);scene.add(plane.group);
- if(cockpit)ckScene.remove(cockpit.group);cockpit=buildCockpit(P);ckScene.add(cockpit.group);showHUD=!P.model.windows;
+ S.flapIdx=Math.min(S.flapIdx,P.flaps.length-1);S.flapDeg=Math.min(S.flapDeg,P.flaps[P.flaps.length-1].deg);if(cockpit)ckScene.remove(cockpit.group);cockpit=buildCockpit(P);ckScene.add(cockpit.group);showHUD=!P.model.windows;
  if(fireball){scene.remove(fireball);fireball=null;}
- clearFX();clearRoute();newCallsign();if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}ATC.log.length=0;S.atc={t:0};Object.assign(S,{abSet:0,abArmed:false,abK:0,abActive:false,abWasActive:false,decel:0,prevGS:0,brakeK:0,slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
+ clearFX();clearRoute();S.ap=null;S.lastRA=undefined;newCallsign();if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}ATC.log.length=0;S.atc={t:0};Object.assign(S,{abSet:0,abArmed:false,abK:0,abActive:false,abWasActive:false,decel:0,prevGS:0,brakeK:0,slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
  IN.pitch=IN.roll=IN.yaw=0;orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;
  const A=AIRPORTS[0],B=DEST;
  if(settings.start==='takeoff'){
@@ -911,14 +914,55 @@ function destroy(reason){if(S.crashed)return;S.crashed=true;S.crashT=0;S.thr=0;S
  fireball=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:0xff7a22,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));fireball.position.copy(S.pos);scene.add(fireball);fbT=0;
  const seen=new Set();plane.group.traverse(m=>{if(m.isMesh&&m.material&&m.material.color&&m.material.blending===THREE.NormalBlending&&!seen.has(m.material)){seen.add(m.material);m.material.color.multiplyScalar(.28);}});
  S.r+=(Math.random()-.5)*1.2;S.p+=(Math.random()-.5)*1.5;}
+// ============================================================ CAT III autopilot / autoland + radio-altitude callouts
+function apChime(seq){if(!Snd.ctx||Snd.muted)return;const C=Snd.ctx;seq.forEach(([f,t0,d])=>{const o=C.createOscillator(),g=C.createGain(),t=C.currentTime+t0;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(Snd.master);o.start(t);o.stop(t+d+.05);});}
+function apEngage(){if(!P.model.windows){msg('No autoland on this aircraft (airliners and Learjet only)',2.5);return;}if(S.onGround||S.crashed){msg('Engage the autopilot in flight',2);return;}
+ const hdg=headingOf(S.q);S.ap={on:true,at:true,locCap:false,gsCap:false,flare:false,retard:false,rollout:false,altT:S.pos.y,hdgT:hdg,thrI:S.thr};
+ msg('AUTOPILOT ON · APPROACH ARMED',3,'#3cff6a');apChime([[880,0,.25]]);const xw=Math.abs(settings.windSpd*Math.sin(settings.windDir*D2R));if(xw>27)msg(`AUTOLAND: crosswind ${Math.round(xw)} kt exceeds the 27 kt limit`,5,'#ffb020');}
+function apOff(reason){if(!S.ap||!S.ap.on)return;S.ap.on=false;msg('AUTOPILOT DISCONNECT'+(reason?' — '+reason:''),3,'#ffb020');apChime([[1250,0,.12],[1050,.14,.12],[1250,.28,.12],[1050,.42,.2]]);}
+function apControl(dt){const a=S.ap,B=DEST;if(S.crashed||S.ditched){a.on=false;return;}
+ const tdzZ=B.z+B.len/2-300,along=S.pos.z-tdzZ,xErr=S.pos.x-B.x,e=new THREE.Euler().setFromQuaternion(S.q,'YXZ'),roll=-e.z*R2D,hdg=headingOf(S.q);
+ const loc=Math.atan2(xErr,S.pos.z-(B.z-B.len/2))*R2D,gsAlt=B.elev+P.gearH+Math.max(0,along)*Math.tan(3*D2R),gsDev=Math.atan2(S.pos.y-P.gearH-B.elev,Math.max(1,along))*R2D-3;
+ const agl=S.pos.y-P.gearH-Math.max(groundH(S.pos.x,S.pos.z),0),inZone=along>-2500&&along<30000&&Math.abs(loc)<15&&-S.vel.z>0;
+ if(!a.locCap&&inZone&&(Math.abs(loc)<2.5||Math.abs(xErr)<90)){a.locCap=true;msg('LOC captured',2,'#3cff6a');}
+ if(a.locCap&&!a.gsCap&&along>0&&Math.abs(gsDev)<.35){a.gsCap=true;msg('G/S captured · LAND 3',2.5,'#3cff6a');if(S.gearPos<.98||S.flapIdx<P.landFlap)msg('AUTOLAND: lower the gear (G) and set landing flaps (V)',6,'#ffb020');}
+ // lateral: track the localizer (position + drift terms handle crosswind)
+ const trk=Math.atan2(S.vel.x,-S.vel.z)*R2D;let tgtRoll;if(a.locCap){const near=agl<250;tgtRoll=clamp(-xErr*(near?.05:.03)-S.vel.x*(near?.9:.6),-15,15);}
+ else if(inZone){const want=clamp(-xErr*.02,-30,30);tgtRoll=clamp((want-trk)*1.5,-25,25);}
+ else{const he=((a.hdgT-hdg+540)%360)-180;tgtRoll=clamp(he*1.5,-25,25);}
+ const qn=clamp(.5*1.225*S.V*S.V/P.qRef,.25,1);
+ if(!S.onGround){if(agl<14)tgtRoll=clamp(tgtRoll,-9,9);IN.roll=clamp((tgtRoll-roll)*2.2/(P.rollRate*qn),-1,1);}
+ // vertical
+ if(a.locCap&&!a.gsCap&&along<-150){apOff('glideslope not captured');msg('GO AROUND — too high for the glideslope',5,'#ff5a4d');return;}
+ if(a.gsCap&&!a.flare)a.gsI=clamp((a.gsI||0)+(gsAlt-S.pos.y)*dt,-40,40);
+ let vsCmd;if(a.gsCap)vsCmd=-S.V*Math.tan(3*D2R)+(gsAlt-S.pos.y)*.16+(a.gsI||0)*.04;else if((a.locCap||inZone)&&along>0&&gsDev>.35){vsCmd=clamp(-S.V*Math.tan(3*D2R)-(S.pos.y-gsAlt)*.04,-16,-3);a.altT=S.pos.y;}else vsCmd=clamp((a.altT-S.pos.y)*.1,-6,6);
+ const Vp=a.Vs===undefined?S.V:a.Vs;a.Vs=lerp(Vp,S.V,Math.min(1,dt*.5));a.acc=lerp(a.acc||0,(a.Vs-Vp)/dt,Math.min(1,dt*.5));
+ const flareH=11+P.len*.2+Math.max(0,P.mass-1e5)/4e4;if(a.gsCap&&agl<flareH&&!a.flare){a.flare=true;a.flareV=S.vel.y;}
+ if(a.flare)vsCmd=Math.min(-.7,a.flareV*clamp(agl/flareH,0,1)*.85);
+ if(!S.onGround){const V=Math.max(30,S.V),gamC=Math.asin(clamp(vsCmd/V,-.5,.5)),gam=Math.asin(clamp(S.vel.y/V,-.9,.9));
+  const qdes=(gamC-gam)*(a.flare?3.4:1.2)-S.qr*.45;IN.pitch=clamp(qdes/(P.pitchRate*D2R*qn),-1,1);
+  IN.yaw=a.flare&&agl<5?clamp(-(((hdg+180)%360)-180)*.2,-1,1):0;}
+ // autothrottle
+ if(a.at&&!S.onGround){if(a.flare&&agl<8){S.thr=0;if(!a.retard){a.retard=true;callout('retard',true);}}
+  else{const [fcl]=flapCL(),vT=Math.sqrt(2*P.W/(1.225*P.S*(P.CL0+P.CLa*P.aApp+fcl)))+5*KT;const err=vT-a.Vs;a.thrI=clamp((a.thrI??S.thr)+err*.012*dt,0,1);const want=clamp(a.thrI+err*.035-a.acc*.25,0,1);S.thr=clamp(S.thr+clamp(want-S.thr,-.12*dt,.12*dt),0,1);S.brake=a.Vs>vT+18*KT&&S.thr<.03;}}
+ // rollout: hold the centerline, idle thrust, then hand back
+ if(S.onGround&&S.airborne){if(!a.rollout){a.rollout=true;msg('ROLLOUT',2,'#3cff6a');}S.thr=0;IN.pitch=0;IN.roll=0;
+  const he=((hdg+180)%360)-180;IN.yaw=clamp(-he*.3-xErr*.06-S.vel.x*.22,-1,1);if(Math.hypot(S.vel.x,S.vel.z)<30*KT)apOff('rollout complete');}}
+const CALLS=[[2500,'twenty five hundred'],[1000,'one thousand'],[500,'five hundred'],[100,'one hundred'],[50,'fifty'],[40,'forty'],[30,'thirty'],[20,'twenty'],[10,'ten']];
+function callout(word,urgent){if(!settings.atcVoice||Snd.muted||!window.speechSynthesis||paused)return;try{if(urgent)speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(word);u.rate=1.35;u.pitch=.75;u.volume=1;
+ const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en-US/i.test(x.lang)&&/male|david|alex|fred/i.test(x.name))||vs.find(x=>/^en/i.test(x.lang));if(v)u.voice=v;speechSynthesis.speak(u);}catch(e){}}
+function radioCallouts(){if(!P||!P.model.windows||!started||paused||S.crashed)return;const ft=(S.pos.y-P.gearH-Math.max(groundH(S.pos.x,S.pos.z),0))/FT;
+ if(S.onGround||S.vel.y>.5){S.lastRA=ft;return;}const last=S.lastRA??ft;for(const [th,w] of CALLS)if(last>th&&ft<=th){callout(w,th<=100);break;}S.lastRA=ft;}
+
 function physicsStep(dt){
+ if(S.ap&&S.ap.on)apControl(dt);
  const s=S,D=s.dmg;simT+=dt;
  _f.set(0,0,-1).applyQuaternion(s.q);_u.set(0,1,0).applyQuaternion(s.q);_r.set(1,0,0).applyQuaternion(s.q);
  const alt=s.pos.y,gh=groundH(s.pos.x,s.pos.z),agl=alt-Math.max(gh,0);
  const rho=1.225*Math.exp(-alt/8500);
  const wf=clamp(Math.pow(Math.max(agl,1)/300,.22),.35,1.2);
  const tk=env.turb*(agl<1500?1:.6)*4;
- _turb.set(fbm(simT*.35,1.3,3),fbm(simT*.45,7.1,3)*.7,fbm(simT*.35,13.7,3)).multiplyScalar(tk);
+ _turb.set(fbm(simT*.35,1.3,3),fbm(simT*.45,7.1,3)*.7*clamp(agl/80,.12,1),fbm(simT*.35,13.7,3)).multiplyScalar(tk);
  _wind.copy(env.wind).multiplyScalar(wf).add(_turb);
  _va.copy(s.vel).sub(_wind);const V=_va.length();
  _qi.copy(s.q).invert();_vb.copy(_va).applyQuaternion(_qi);
@@ -1026,7 +1070,7 @@ function physicsStep(dt){
     if(pitch>P.tailStrike){D.tail=Math.min(1,D.tail+.25);addHull(.04);msg('Tail strike!',3,'#ff5a4d');}
     if(vn>12)addHull((vn-12)/16*.6);
     if(D.hull>.75&&!s.fire&&Math.random()<.5){s.fire=1;msg('FIRE!',3,'#ff5a4d');}
-    if(s.airborne&&!s.crashed){const rw=onRunway(s.pos.x,s.pos.z);s.touch={fpm:Math.round(vn/FT*60),rw,off:rw?Math.abs(s.pos.x-rw.x):0};
+    if(s.airborne&&!s.crashed){const rw=onRunway(s.pos.x,s.pos.z);s.touch={fpm:Math.round(vn/FT*60),rw,off:rw?Math.abs(s.pos.x-rw.x):0,x:s.pos.x-DEST.x,z:s.pos.z-DEST.z};
      const f=s.touch.fpm;const q=f<150?'Butter!':f<300?'Smooth':f<500?'Firm':'Hard';msg(`Touchdown ${f} ft/min — ${q}${rw?'':' (off runway!)'}`,5,f<500?'#7dff9a':'#ffb020');}
    }
   }
@@ -1139,6 +1183,7 @@ addEventListener('keydown',e=>{
   case 'KeyX':{if(!P.model.windows){msg('No autobrake on this aircraft',2);break;}const opts=S.onGround&&!S.airborne?[0,1,2,3,4,5]:[0,1,2,3,4];let i=opts.indexOf(S.abSet);S.abSet=opts[(i+1)%opts.length];S.abArmed=S.abSet>0;S.abK=0;S.abWasActive=false;msg('Autobrake '+AB_NAMES[S.abSet],1.5,'#4cc2ff');break;}
   case 'KeyH':if(e.shiftKey){hideAll=!hideAll;msg(hideAll?'All overlays hidden (Shift+H to restore)':'Overlays shown',1.5);}else{showHUD=!showHUD;msg('HUD '+(showHUD?'ON':'OFF')+(camMode!==1?' (HUD shows in cockpit view)':''),1.5);}break;
   case 'KeyZ':settings.atcVoice=!settings.atcVoice;if(!settings.atcVoice&&window.speechSynthesis)speechSynthesis.cancel();msg('ATC voice '+(settings.atcVoice?'ON':'OFF'),1.5);try{localStorage.setItem('vibeflight',JSON.stringify(settings));}catch(e){}break;
+  case 'KeyY':if(S.ap&&S.ap.on)apOff('pilot');else apEngage();break;
   case 'KeyK':mapMode=(mapMode+1)%3;msg('Map: '+['auto','island','airport'][mapMode],1.2);break;
   case 'KeyI':if(camMode===1){instInCockpit=!instInCockpit;msg('2D instrument overlay '+(instInCockpit?'ON':'OFF'),1.2);}else{showInst=!showInst;msg('Instruments '+(showInst?'ON':'OFF'),1.2);}break;
   case 'F1':showHelp=!showHelp;document.getElementById('help').style.display=showHelp?'block':'none';break;
@@ -1184,6 +1229,7 @@ function readInput(dt){
  if(S.rev>0&&thrD<0)thrD=0;
  S.thr=clamp(S.thr+thrD*dt*.45,0,1);
  const ease=(cur,tgt)=>{const r=tgt===0?5:(Math.sign(tgt)!==Math.sign(cur)&&cur!==0?6:2.6);return cur+clamp(tgt-cur,-r*dt,r*dt);};
+ if(S.ap&&S.ap.on){if(tp||tr||ty)apOff('control input');else{if(thrD&&S.ap.at){S.ap.at=false;msg('AUTOTHROTTLE OFF',2,'#ffb020');}return;}}
  if(padActive){IN.pitch=tp;IN.roll=tr;IN.yaw=ty;}else{IN.pitch=ease(IN.pitch,tp);IN.roll=ease(IN.roll,tr);IN.yaw=ease(IN.yaw,ty);}
 }
 
@@ -1439,7 +1485,7 @@ function drawHUD(dt){
    const hp=Math.round((1-Dm.hull)*100);H.fillStyle=hp>70?'#3fd47a':hp>35?'#ffb020':'#ff4d4d';H.font='700 12px ui-monospace,monospace';H.textAlign='left';H.fillText(`AIRFRAME ${hp}%`,lx,ly+10);ly+=16;}
   H.fillStyle='#c9d4df';H.font='600 11px ui-monospace,monospace';H.textAlign='left';
   const gsKt=Math.hypot(S.vel.x,S.vel.z)/KT;
-  for(const l of [...(P.model.windows?[`ABRK ${AB_NAMES[S.abSet]}${S.abActive?' ●':S.abArmed?' arm':''}`]:[]),`G   ${S.gLoad.toFixed(1)}`,`AoA ${(S.alpha*R2D).toFixed(1)}°`,`M   ${S.M.toFixed(2)}`,`GS  ${Math.round(gsKt)} kt`,`AGL ${Math.max(0,Math.round(agl))} ft`])if(ly<oy+gap*2-6){H.fillText(l,lx,ly+10);ly+=14;}
+  for(const l of [...(S.ap&&S.ap.on?[`AP   ${S.ap.flare?'FLARE':S.ap.gsCap?'LAND3':S.ap.locCap?'LOC':'ARM'}${S.ap.at?' A/T':''}`]:[]),...(P.model.windows?[`ABRK ${AB_NAMES[S.abSet]}${S.abActive?' ●':S.abArmed?' arm':''}`]:[]),`G   ${S.gLoad.toFixed(1)}`,`AoA ${(S.alpha*R2D).toFixed(1)}°`,`M   ${S.M.toFixed(2)}`,`GS  ${Math.round(gsKt)} kt`,`AGL ${Math.max(0,Math.round(agl))} ft`])if(ly<oy+gap*2-6){H.fillText(l,lx,ly+10);ly+=14;}
  }
  // ---- minimap + nav
  const apD=diagAirport();const ms=apD?Math.min(320,W*.25,Hh*.42):Math.min(200,W*.18),mx=W-ms-16,my=16;
@@ -1523,7 +1569,8 @@ function drawPFD(S2){const {x:c,w,h}=S2,I=INST;c.fillStyle='#000';c.fillRect(0,0
  const hy=h-46;c.save();c.beginPath();c.rect(cx-aw/2,hy,aw,40);c.clip();c.fillStyle='#3a3f47';c.fillRect(cx-aw/2,hy,aw,40);c.strokeStyle='#fff';c.fillStyle='#fff';c.lineWidth=2;c.font='bold 15px Arial';c.textAlign='center';
  for(let a=Math.floor(I.hdg/5)*5-40;a<=I.hdg+40;a+=5){const xx=cx+(a-I.hdg)*5;c.beginPath();c.moveTo(xx,hy);c.lineTo(xx,hy+(a%10===0?12:6));c.stroke();if(a%10===0)c.fillText(String(((a%360)+360)%360/10|0).padStart(2,'0'),xx,hy+26);}c.restore();
  c.strokeStyle='#fff';c.fillStyle='#000';c.fillRect(cx-28,hy-26,56,24);c.strokeRect(cx-28,hy-26,56,24);c.fillStyle='#fff';c.font='bold 18px monospace';c.fillText(String(Math.round(I.hdg)%360).padStart(3,'0'),cx,hy-13);
- c.fillStyle='#3cff6a';c.font='bold 16px Arial';c.textAlign='center';const fma=[S.thr>.9?'TO/GA':(S.rev>0?'REV':'SPD'),'HDG',S.onGround?'—':(I.ils&&Math.abs(I.ils.gs)<1?'G/S':'V/S')];fma.forEach((t,i)=>c.fillText(t,w*(.25+i*.25),18));
+ c.fillStyle='#3cff6a';c.font='bold 16px Arial';c.textAlign='center';const A=S.ap&&S.ap.on?S.ap:null;const fma=A?[A.retard?'RETARD':(A.at?'SPD':'—'),A.rollout?'ROLLOUT':(A.locCap?'LOC':'HDG HOLD'),A.rollout?'':(A.flare?'FLARE':(A.gsCap?'G/S':(A.locCap?'G/S arm':'ALT HOLD')))]:[S.thr>.9?'TO/GA':(S.rev>0?'REV':'SPD'),'HDG',S.onGround?'—':(I.ils&&Math.abs(I.ils.gs)<1?'G/S':'V/S')];
+ if(A){c.fillStyle='#3cff6a';c.font='bold 18px Arial';c.textAlign='center';c.fillText(A.locCap&&A.gsCap?'LAND 3':'CMD',cx,44);}fma.forEach((t,i)=>c.fillText(t,w*(.25+i*.25),18));
  c.strokeStyle='#666';c.beginPath();c.moveTo(w*.375,4);c.lineTo(w*.375,32);c.moveTo(w*.625,4);c.lineTo(w*.625,32);c.stroke();
  c.fillStyle='#ff4fd8';c.font='bold 15px monospace';c.textAlign='left';c.fillText(`${Math.round(P.vref/KT)} REF`,6,h-14);if(I.agl<2500){c.fillStyle='#fff';c.textAlign='right';c.fillText(`RA ${Math.max(0,Math.round(I.agl))}`,w-6,h-14);}}
 function drawND(S2){const {x:c,w,h}=S2,I=INST;c.fillStyle='#000';c.fillRect(0,0,w,h);if(!I)return;const cx=w/2,cy=h*.8,R=h*.66;
@@ -1677,7 +1724,7 @@ function renderCockpit(){if(camMode!==1||!cockpit||!plane)return;cockpit.update(
  renderer.autoClear=false;renderer.clearDepth();renderer.render(ckScene,ckCam);renderer.autoClear=true;}
 
 // ============================================================ menu
-const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['X','Autobrake OFF/1/2/3/MAX (RTO on ground) · airliners'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['Z','ATC voice on/off (transcript always shown)'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Press any button to activate · sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
+const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['X','Autobrake OFF/1/2/3/MAX (RTO on ground) · airliners'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['Y','Autopilot / CAT III autoland (airliners): captures ILS, flares, rolls out'],['Z','ATC voice on/off (transcript always shown)'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Press any button to activate · sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
 for(const id of ['keysList','keysList2'])document.getElementById(id).innerHTML=KEYS.map(([k,v])=>`<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
 function seg(id,obj,key){const el=document.getElementById(id);el.innerHTML='';for(const [k,v] of Object.entries(obj)){const b=document.createElement('button');b.textContent=v.name;b.className=settings[key]===k?'sel':'';b.onclick=()=>{settings[key]=k;seg(id,obj,key);};el.appendChild(b);}}
 function cards(){const el=document.getElementById('planeCards');el.innerHTML='';for(const p of PLANES){const d=document.createElement('div');d.className='card'+(settings.plane===p.id?' sel':'');
@@ -1685,6 +1732,7 @@ function cards(){const el=document.getElementById('planeCards');el.innerHTML='';
 const wd=document.getElementById('windDir'),wsp=document.getElementById('windSpd');
 function syncInputs(){wd.value=settings.windDir;wsp.value=settings.windSpd;document.getElementById('windDirV').textContent=String(settings.windDir).padStart(3,'0')+'°';document.getElementById('windSpdV').textContent=settings.windSpd+' kt';
  document.getElementById('startSel').value=settings.start;document.getElementById('invertChk').checked=settings.invert;document.getElementById('shadowChk').checked=settings.shadows;document.getElementById('gfxSel').value=settings.gfx;}
+document.getElementById('worstBtn').onclick=()=>{Object.assign(settings,{weather:'worst',time:'night',windDir:270,windSpd:30,plane:'a388',start:'approach'});cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();};
 document.getElementById('gfxSel').onchange=e=>{settings.gfx=e.target.value;if(settings.gfx!=='auto')qLevel=+settings.gfx;FPS.ceil=4;};
 wd.oninput=()=>{settings.windDir=+wd.value;syncInputs();};wsp.oninput=()=>{settings.windSpd=+wsp.value;syncInputs();};
 document.getElementById('startSel').onchange=e=>settings.start=e.target.value;document.getElementById('invertChk').onchange=e=>settings.invert=e.target.checked;document.getElementById('shadowChk').onchange=e=>settings.shadows=e.target.checked;
@@ -1704,7 +1752,7 @@ function frame(now){
   readInput(dt);
   acc+=dt;const h=1/120;let n=0;while(acc>=h&&n<12){physicsStep(h);acc-=h;n++;}if(S.crashed)S.crashT+=dt;
  }
- updateVisuals(dt,t);updateFX(dt);updateCamera(dt);atcUpdate(dt);
+ updateVisuals(dt,t);updateFX(dt);updateCamera(dt);atcUpdate(dt);radioCallouts();
  renderer.render(scene,camera);renderCockpit();
  FPS.acc+=dt;FPS.n++;if(FPS.acc>=1){FPS.v=FPS.n/FPS.acc;FPS.acc=0;FPS.n=0;autoQuality(t);}
  hudDt+=dt;if(++hudFrame%QL[qLevel].hud===0){drawHUD(hudDt);hudDt=0;}
@@ -1784,6 +1832,11 @@ function selfTest(){
    physicsStep(h);atcUpdate(h);if(S.atc.parked||S.crashed)break;}
   out.push(`ATC full flow: pos ${Math.round(S.pos.x-DEST.x)},${Math.round(S.pos.z-DEST.z)} wp${S.atc.wp} gs${(Math.hypot(S.vel.x,S.vel.z)/KT).toFixed(1)} hdg${Math.round(headingOf(S.q))} n1 ${S.n1.toFixed(2)} brake${+S.brake} belly${+S.belly} gnd${+S.onGround} t=${t.toFixed(0)}s parked=${!!S.atc.parked} crashed=${S.crashed} hull=${S.dmg.hull.toFixed(2)} exit=A${S.atc.exit&&S.atc.exit.n}`);
   for(const l of ATC.log)out.push('   ATC> '+l.text);paused=true;started=false;}
+ for(const [nm,st,id,wd,ws] of [['autoland 737 storm xwind15','approach','b738',270,15],['autoland A380 storm xwind20','approach','a388',90,20],['autoland WORST A380 xwind30','approach','a388',270,30],['autoland WORST 737 xwind30','approach','b738',90,30],['autoland WORST 777 xwind30','approach','b77w',270,30],['autoland WORST A320 xwind30','approach','a20n',270,30]]){
+  settings.plane=id;settings.start=st;settings.weather=nm.includes('WORST')?'worst':'storm';settings.windDir=wd;settings.windSpd=ws;applyEnv();resetFlight();apEngage();S.abSet=3;S.abArmed=true;window.__msgLog=[];let t=0;
+  let lastThr=S.thr;window.__thrSw=0;for(;t<400;t+=h){if(S.ap.gsCap&&S.gearPos<.5){S.gearDown=true;S.flapIdx=P.landFlap;}physicsStep(h);if(S.ap.on&&!S.ap.flare)window.__thrSw+=Math.abs(S.thr-lastThr);lastThr=S.thr;{const ag=S.pos.y-P.gearH-Math.max(groundH(S.pos.x,S.pos.z),0);if(false&&(nm.includes('WORST 737')&&ag<45&&!S.ap.rollout&&Math.round(t*120)%30===0)||(st==='air'&&Math.round(t*120)%1200===0))out.push(`   ${nm.slice(9,20)} t${t.toFixed(1)} z${Math.round(S.pos.z-DEST.z)} x${Math.round(S.pos.x-DEST.x)} agl${ag.toFixed(1)} vs${S.vel.y.toFixed(2)} V${(S.V/KT).toFixed(0)} pit${(new THREE.Euler().setFromQuaternion(S.q,'YXZ').x*R2D).toFixed(1)} IN${IN.pitch.toFixed(2)} thr${S.thr.toFixed(2)} cap${+S.ap.locCap}${+S.ap.gsCap} fl${+S.ap.flare} gnd${+S.onGround} gH${Math.round(groundH(S.pos.x,S.pos.z))}`);}if(st==='air'&&0&&Math.round(t*120)%1200===0){const xE=S.pos.x-DEST.x;out.push(`   air t${t.toFixed(0)} x${Math.round(xE)} z${Math.round(S.pos.z-DEST.z)} alt${Math.round(S.pos.y)} V${(S.V/KT).toFixed(0)} hdg${Math.round(headingOf(S.q))} loc${(Math.atan2(xE,S.pos.z-(DEST.z-DEST.len/2))*R2D).toFixed(1)} cap${+S.ap.locCap}${+S.ap.gsCap} on${+S.ap.on} a${(S.alpha*R2D).toFixed(1)}`);}if(S.crashed||(S.onGround&&S.airborne&&Math.hypot(S.vel.x,S.vel.z)<1))break;}
+  out.push(`${nm}: t=${t.toFixed(0)}s crashed=${S.crashed} landed=${S.landed} hull=${S.dmg.hull.toFixed(2)} touch=${S.touch?S.touch.fpm:'-'}fpm td@x${S.touch?Math.round(S.touch.x):'-'},z${S.touch?Math.round(S.touch.z):'-'} onRwy=${!!(S.touch&&S.touch.rw)} thrSwing=${(window.__thrSw||0).toFixed(2)} pos=${Math.round(S.pos.x-DEST.x)},${Math.round(S.pos.z-DEST.z)} | ${[...new Set(window.__msgLog)].filter(x=>/Touch|tip|Hard|gear|Tail|rough/i.test(x)).join(' / ').slice(0,200)}`);}
+ settings.weather='clear';settings.windDir=20;settings.windSpd=6;applyEnv();
  console.log('SELFTEST\n'+out.join('\n'));
 }
 </script>
