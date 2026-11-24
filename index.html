@@ -837,7 +837,8 @@ const Snd={ctx:null,muted:false,init(){if(this.ctx){this.ctx.resume();return;}tr
  this.bO=C.createOscillator();this.bO.type='square';this.bO.frequency.value=720;this.bG=gn(0);this.bO.connect(this.bG).connect(this.master);this.bO.start();
  this.gF=flt('bandpass',230,.6);this.gG=gn(0);src().connect(this.gF).connect(this.gG).connect(this.master);
  this.noiseBuf=buf;}catch(e){this.ctx=null;}},
- update(n1,ab,V,warn,rainK,inCockpit,rumble=0){if(!this.ctx)return;const t=this.ctx.currentTime,m=this.muted?0:1,k=.08;this.gG.gain.setTargetAtTime(m*rumble*1.4*(.8+.4*Math.random()),t,.03);this.gF.frequency.setTargetAtTime(160+rumble*260,t,.1);
+ update(n1,ab,V,warn,rainK,inCockpit,rumble=0){if(!this.ctx)return;const t=this.ctx.currentTime,m=this.muted?0:1,k=.08;const hush=paused||isUI();this.master.gain.setTargetAtTime(hush?0:.55,t,.05);
+  if(window.speechSynthesis){try{if(hush&&speechSynthesis.speaking&&!speechSynthesis.paused)speechSynthesis.pause();else if(!hush&&speechSynthesis.paused)speechSynthesis.resume();}catch(e){}}this.gG.gain.setTargetAtTime(m*rumble*1.4*(.8+.4*Math.random()),t,.03);this.gF.frequency.setTargetAtTime(160+rumble*260,t,.1);
   this.eF.frequency.setTargetAtTime(160+n1*700,t,k);this.eG.gain.setTargetAtTime(m*(.05+n1*.32),t,k);
   this.wO.frequency.setTargetAtTime(180+n1*2600,t,k);this.wG.gain.setTargetAtTime(m*(.004+n1*.018),t,k);
   this.aG.gain.setTargetAtTime(m*ab*.9,t,k);
@@ -852,7 +853,7 @@ const Snd={ctx:null,muted:false,init(){if(this.ctx){this.ctx.resume();return;}tr
  motor(dur){if(!this.ctx||this.muted)return;const C=this.ctx,o=C.createOscillator(),g=C.createGain(),t=C.currentTime;o.type='sawtooth';o.frequency.setValueAtTime(140,t);o.frequency.linearRampToValueAtTime(190,t+dur);
   const f=C.createBiquadFilter();f.type='lowpass';f.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.3);g.gain.setValueAtTime(.05,t+dur-.3);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(f).connect(g).connect(this.master);o.start(t);o.stop(t+dur+.1);},
  boom(v){if(!this.ctx||this.muted)return;const C=this.ctx,s=C.createBufferSource();s.buffer=this.noiseBuf;const f=C.createBiquadFilter();f.type='lowpass';f.frequency.value=320;const g=C.createGain();const t=C.currentTime;g.gain.setValueAtTime(v*1.6,t);g.gain.exponentialRampToValueAtTime(.001,t+.9+v);s.connect(f).connect(g).connect(this.master);s.start(t);s.stop(t+2);},
- thunder(delay){if(!this.ctx||this.muted)return;const C=this.ctx,s=C.createBufferSource();s.buffer=this.noiseBuf;const f=C.createBiquadFilter();f.type='lowpass';f.frequency.value=140;const g=C.createGain();
+ thunder(delay){if(!this.ctx||this.muted||paused)return;const C=this.ctx,s=C.createBufferSource();s.buffer=this.noiseBuf;const f=C.createBiquadFilter();f.type='lowpass';f.frequency.value=140;const g=C.createGain();
   const t=C.currentTime+delay;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1.4,t+.08);g.gain.exponentialRampToValueAtTime(.001,t+2.8);s.connect(f).connect(g).connect(this.master);s.start(t);s.stop(t+3);}};
 
 // ============================================================ simulation state
