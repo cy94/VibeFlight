@@ -239,13 +239,20 @@ function placeExtraAirports(){
   if(zc===null)continue;const zN=zc+40,zS=zN+2100;let mx=-1e9;for(let z=zN;z<=zS;z+=150)mx=Math.max(mx,rawH(x,z));if(!hb||mx<hb.mx)hb={x,zN,mx};}
  if(hb)AIRPORTS.push({id:'HBP',name:'Harbor Point',short:'Harbor',code:'HBP',x:hb.x,z:hb.zN+1050,elev:4,len:2100,wid:40,kind:'regional',land:-1,ils:true,als:true,seawall:true,corr:{slope:.03,lat:[300,800],len:5000,ends:[1]}});
  AIRPORTS.push({id:'FRL',name:'Frost Lake Ice Strip',short:'Frost Lake',code:'FRL',x:LAKE.x,z:LAKE.z,elev:.6,len:1800,wid:40,kind:'regional',land:1,ils:true,als:false,ice:true,corr:null});
- let hv=null;for(let x=-13500;x<=-5000;x+=250)for(let z=-15000;z<=-1000;z+=250){let mn=1e9,mx=-1e9,sum=0;
-  for(let i=-2;i<=2;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*110,z+i*350);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}
-  const avg=sum/15;if(avg<450||avg>1400)continue;let ring=0;for(let k=0;k<12;k++){const an=k/12*TAU;ring+=rawH(x+Math.cos(an)*1300,z+Math.sin(an)*1300);}ring/=12;
-  if(ring<avg+40||mx-mn>140)continue;const sc=(mx-mn)-.35*(ring-avg);if(!hv||sc<hv.sc)hv={x,z,sc,avg,ring};}
- if(hv){const len=1400,T={x:hv.x,z:hv.z+len/2},F={x:hv.x,z:T.z+2600},a=48*D2R,S0={x:F.x+Math.sin(a)*6500,z:F.z+Math.cos(a)*6500};
-  AIRPORTS.push({id:'HVY',name:'Hidden Valley',short:'Hidden Valley',code:'HVY',x:hv.x,z:hv.z,elev:Math.round(hv.avg),len,wid:28,kind:'regional',land:1,ils:false,als:false,
-   corr:{slope:.03,lat:[200,600],len:2000,ends:[-1]},path:[T,F,S0],via:F});}
+ const fly=[];
+ function findBowl(x0,x1,z0,z1,lo,hi,len){for(const [rg,sp] of [[40,150],[15,220],[-60,320]]){const b=bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp);if(b)return b;}return null;}
+ function bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp){let b=null;for(let x=x0;x<=x1;x+=250)for(let z=z0;z<=z1;z+=250){if(AIRPORTS.some(a=>Math.hypot(a.x-x,a.z-z)<6000))continue;let mn=1e9,mx=-1e9,sum=0;
+   for(let i=-2;i<=2;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*110,z+i*len/4);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}
+   const avg=sum/15;if(avg<lo||avg>hi)continue;let ring=0;for(let k=0;k<12;k++){const an=k/12*TAU;ring+=rawH(x+Math.cos(an)*1300,z+Math.sin(an)*1300);}ring/=12;
+   if(ring<avg+rg||mx-mn>sp)continue;const sc=(mx-mn)-.35*(ring-avg);if(!b||sc<b.sc)b={x,z,sc,avg};}return b;}
+ function canyonAirport(id,name,short,b,len,wid,legs){if(!b)return;const T={x:b.x,z:b.z+len/2},path=[T];let h=0,p=T;for(const [d,turn] of legs){h+=turn*D2R;p={x:p.x+Math.sin(h)*d,z:p.z+Math.cos(h)*d};path.push(p);}
+  const vias=path.slice(1,-1).reverse();const rem=[];let acc=0;const segL=[];for(let k=1;k<path.length;k++)segL.push(Math.hypot(path[k].x-path[k-1].x,path[k].z-path[k-1].z));
+  for(let k=1;k<path.length-1;k++){rem[k]=segL.slice(0,k).reduce((a,c)=>a+c,0);}const viaRem=path.slice(1,-1).map((_,k)=>rem[k+1]).reverse();
+  AIRPORTS.push({id,name,short,code:id,x:b.x,z:b.z,elev:Math.round(b.avg),len,wid,kind:'regional',land:1,ils:false,als:false,leadIn:true,
+   corr:{slope:.03,lat:[200,600],len:2000,ends:[-1]},path,vias,viaRem,pathLen:segL.reduce((a,c)=>a+c,0)});}
+ canyonAirport('HVY','Hidden Valley','Hidden Valley',findBowl(-13500,-5000,-15000,-1000,450,1400,1400),1400,28,[[2600,0],[6500,48]]);
+ canyonAirport('EGP','Eagle Pass','Eagle Pass',findBowl(8500,15500,-15000,2500,450,1500,1500),1500,30,[[2300,0],[2700,45],[3200,-82]]);
+ canyonAirport('SDL','Saddle Strip','Saddle',findBowl(-11000,11000,4500,13000,200,1400,2000),2000,36,[[2500,0],...Array.from({length:10},()=>[520,11])]);
  CARRIER={id:'CVN',name:'CVN Resolute',short:'Resolute',code:'CVN',x:-22000,z:-7500,elev:20,len:330,wid:30,kind:'carrier',land:1,ils:true,gs:3.5,tdzOff:76,corr:null};AIRPORTS.push(CARRIER);
 }
 placeExtraAirports();
@@ -613,6 +620,8 @@ function buildRegional(ap){
   const rk=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1.6,0),mat('#5c5a56',{roughness:1}),140);const m4=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler();setSeed(17);
   for(let i=0;i<140;i++){e.set(rnd()*3,rnd()*3,rnd()*3);q.setFromEuler(e);m4.compose(new V3(-150+rnd()*420,-1.5-rnd()*2.5,wz+(-R.L)*(4+rnd()*9)),q,new V3(1+rnd()*.8,.8+rnd()*.6,1+rnd()*.8));rk.setMatrixAt(i,m4);}
   rk.castShadow=rk.receiveShadow=true;g.add(rk);wall.castShadow=wall.receiveShadow=true;}
+ if(ap.leadIn&&ap.path){let acc=0;for(let k=0;k<ap.path.length-1;k++){const A0=ap.path[k],B0=ap.path[k+1],L0=Math.hypot(B0.x-A0.x,B0.z-A0.z);
+   for(let d=k?0:350;d<L0;d+=150){const x=A0.x+(B0.x-A0.x)*d/L0,z=A0.z+(B0.z-A0.z)*d/L0,dd=acc+d;const gy=Math.max(groundH(x,z),0)+2;addLight(x,gy,z,'#e8f0ff',2.2,.6,1,((-dd/900)%1+1)%1*.5);addLight(x,gy-.4,z,'#ffe0a0',1.1,.25);}acc+=L0;}}
  addPapi(ap);
 }
 function buildCarrier(c){
@@ -887,6 +896,9 @@ const SCEN={
  ice:{name:'❄ Frost Lake ice strip — braking action poor',dest:'FRL',start:'approach',dist:6000,set:{plane:'b738',weather:'snow',time:'night',windDir:320,windSpd:10}},
  carrier:{name:'⚓ Carrier trap — F/A-18 onto CVN Resolute',dest:'CVN',start:'approach',dist:5000,set:{plane:'f18',weather:'scattered',time:'sunset',windDir:0,windSpd:25}},
  hidden:{name:'⛰ Hidden Valley — dog-leg canyon approach',dest:'HVY',start:'via',dist:6500,set:{plane:'lj45',weather:'scattered',time:'noon',windDir:330,windSpd:12}},
+ eagle:{name:'⛰ Eagle Pass — S-turn canyon, right then hard left',dest:'EGP',start:'via',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:260,windSpd:14}},
+ saddle:{name:'⛰ Saddle Strip — curving 110° valley arc to final',dest:'SDL',start:'via',set:{plane:'a20n',weather:'overcast',time:'dawn',windDir:300,windSpd:12}},
+ hiddenNight:{name:'⛰ Hidden Valley — night & snow, follow the strobes',dest:'HVY',start:'via',set:{plane:'lj45',weather:'snow',time:'night',windDir:330,windSpd:14}},
  ridgeWave:{name:'⛰ Ridgeback — tailwind & mountain-wave downdrafts',dest:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:195,windSpd:16}},
  ridgeSnow:{name:'⛰ Ridgeback — night snowstorm, gusty crosswind',dest:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'snow',time:'night',windDir:255,windSpd:20}},
  ridgeEfato:{name:'⛰ Ridgeback — engine failure after takeoff',dest:'RBK',start:'takeoff',from:'RBK',fail:'efato',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:350,windSpd:8}},
@@ -1002,17 +1014,17 @@ function resetFlight(){
   const [fcl,fcd]=flapCL();const cl=W*Math.cos(gs*D2R)/(qd*P.S);const alpha=(cl-P.CL0-fcl)/P.CLa;
   const cd=P.CD0+fcd+P.gearCD*S.gearPos+P.K*cl*cl;const Treq=qd*P.S*cd-W*Math.sin(gs*D2R);
   const milT=P.thrust;let p=clamp((Treq/milT-.04)/.96,0,1);if(P.ab)p*=.95;S.thr=S.n1=p;
-  if(via){const S0=B.path[2],F=B.path[1],totalD=Math.hypot(S0.x-F.x,S0.z-F.z)+2600+200;S.pos.set(S0.x,B.elev+totalD*.04+P.gearH+60,S0.z);}
+  if(via){const n=B.path.length,S0=B.path[n-1];S.pos.set(S0.x,B.elev+B.pathLen*.04+P.gearH+60,S0.z);}
   else if(app)S.pos.set(B.x,B.elev+dist*Math.tan(gs*D2R)+P.gearH,RI.tdzZ+RI.L*dist);
   else S.pos.set(A.x,A.elev+900,A.z-5000);
-  const hd=via?(Math.atan2(B.path[1].x-B.path[2].x,-(B.path[1].z-B.path[2].z))*R2D+360)%360:(app?RI.hdg:0);S.q.copy(quatFrom(hd,alpha*R2D-gs,0));S.vel.set(Math.sin(hd*D2R)*Math.cos(gs*D2R)*V,-Math.sin(gs*D2R)*V,-Math.cos(hd*D2R)*Math.cos(gs*D2R)*V);S.viaDone=!via;S.onGround=false;S.airborne=true;S.timerOn=true;S.airT=99;
+  const n2=(B.path||[]).length,hd=via?(Math.atan2(B.path[n2-2].x-B.path[n2-1].x,-(B.path[n2-2].z-B.path[n2-1].z))*R2D+360)%360:(app?RI.hdg:0);S.q.copy(quatFrom(hd,alpha*R2D-gs,0));S.vel.set(Math.sin(hd*D2R)*Math.cos(gs*D2R)*V,-Math.sin(gs*D2R)*V,-Math.cos(hd*D2R)*Math.cos(gs*D2R)*V);S.viaIdx=via?0:(B.vias||[]).length;S.onGround=false;S.airborne=true;S.timerOn=true;S.airT=99;
   msg(app?`On final for runway ${RI.num} at ${B.short}. Vref ${Math.round(V/KT-5)} kt — ${B.ils===false?'visual approach, use the PAPI lights':'follow the ILS needles / PAPI'}`:`Lakeside is 10 km ahead. Follow the magenta bearing pointer.`,7,'#7fd6ff');
  }
  if(SC.fail==='flapless'){S.dmg.flapsJam=true;msg('FLAPS JAMMED UP — fly a fast approach, expect a long landing roll',7,'#ffb020');}
  if(SC.fail==='gear'){S.dmg.gearR=true;msg('RIGHT MAIN GEAR FAILED TO EXTEND — land on the left main, hold the right wing up',7,'#ffb020');}
  if(SC.fail==='engine')msg('Expect trouble below 1,000 ft…',4,'#ffb020');
  S.efatoArmed=SC.fail==='efato';S.goAround=null;if(truck){truck.visible=SC.fail==='blocked';if(truck.visible)truck.position.set(B.x+2,B.elev,B.z-RI.L*100);}
- if(SC.start==='via')msg(`Hidden Valley: follow the magenta pointer into the canyon, then turn RIGHT onto final at ${(2.6).toFixed(1)} km — no ILS`,8,'#ffb020');
+ if(SC.start==='via')msg(`${B.short}: follow the magenta pointer / strobe lights through the canyon (${(B.vias||[]).length} turn${(B.vias||[]).length>1?'s':''}), then line up for runway 36 — no ILS`,9,'#ffb020');
  if(SC.fail==='efato')msg('Ridgeback departure: full power, rotate, climb straight ahead up the valley — expect an engine failure',7,'#ffb020');
  if(B.kind==='carrier')msg('Lower the tailhook (J) and catch a wire! Watch the meatball (amber light) left of the deck',8,'#ffb020');
  if(B.ice)msg('Frost Lake: braking action POOR on the ice — use reverse thrust',7,'#ffb020');
@@ -1579,8 +1591,8 @@ function drawHUD(dt){
  const kt=S.V/KT,ft=S.pos.y/FT,fpm=S.vel.y/FT*60,hdg=headingOf(S.q),e=new THREE.Euler().setFromQuaternion(S.q,'YXZ'),pitch=e.x*R2D,roll=-e.z*R2D;
  let dh=hdg-S.lastHdg;if(dh>180)dh-=360;if(dh<-180)dh+=360;S.lastHdg=hdg;if(dt>0)S.turnRate+=(dh/dt-S.turnRate)*Math.min(1,dt*4);
  const RI=rwyInfo(DEST),tdz={x:DEST.x,z:RI.tdzZ,y:DEST.elev};const dx=tdz.x-S.pos.x,dz=tdz.z-S.pos.z,dist=Math.hypot(dx,dz);
- if(DEST.via&&!S.viaDone&&Math.hypot(S.pos.x-DEST.via.x,S.pos.z-DEST.via.z)<900)S.viaDone=true;
- const NP=DEST.via&&!S.viaDone?DEST.via:tdz;const brg=(Math.atan2(NP.x-S.pos.x,-(NP.z-S.pos.z))*R2D+360)%360;
+ const VS=DEST.vias||[];while(S.viaIdx<VS.length&&Math.hypot(S.pos.x-VS[S.viaIdx].x,S.pos.z-VS[S.viaIdx].z)<900)S.viaIdx++;
+ const NP=S.viaIdx<VS.length?VS[S.viaIdx]:tdz;const brg=(Math.atan2(NP.x-S.pos.x,-(NP.z-S.pos.z))*R2D+360)%360;
  const along=(S.pos.z-tdz.z)*RI.L;let ils=null;if(DEST.ils!==false&&along>60&&along<25000){const loc=Math.atan2((S.pos.x-DEST.x)*RI.L,(S.pos.z-RI.farZ)*RI.L)*R2D;if(Math.abs(loc)<12)ils={loc,gs:Math.atan2(S.pos.y-P.gearH-tdz.y,along)*R2D-RI.gs};}
  const agl=(S.pos.y-P.gearH-Math.max(surfH(S.pos.x,S.pos.z),0))/FT;
  INST={kt,ft,fpm,hdg,pitch,roll,brg,ils,agl,ball:Math.atan2(S.sf.dot(_r.set(1,0,0).applyQuaternion(S.q)),Math.max(.1,S.sf.dot(_u.set(0,1,0).applyQuaternion(S.q))))};
@@ -1629,7 +1641,7 @@ function drawHUD(dt){
  if(!hideAll&&miniMap&&!apD){H.save();H.globalAlpha=.92;H.drawImage(miniMap,mx,my,ms,ms);H.globalAlpha=1;H.strokeStyle='#3c424b';H.strokeRect(mx+.5,my+.5,ms,ms);
   for(const ap of AIRPORTS){const [a,b]=w2m(ap.x,ap.z-ap.len/2,ms,mx,my),[c,d]=w2m(ap.x,ap.z+ap.len/2,ms,mx,my);H.strokeStyle=ap===DEST?'#ff4fd8':'#fff';H.lineWidth=3;H.beginPath();H.moveTo(a,b);H.lineTo(c,d);H.stroke();
    H.fillStyle='#fff';H.font='700 10px system-ui';H.textAlign='left';H.fillText(ap.code,a+6,(b+d)/2);}
-  const [px,py]=w2m(S.pos.x,S.pos.z,ms,mx,my),[tx,ty]=w2m(NP.x,NP.z,ms,mx,my);H.setLineDash([4,3]);H.strokeStyle='#ff4fd8';H.lineWidth=1.2;H.beginPath();H.moveTo(px,py);H.lineTo(tx,ty);H.stroke();H.setLineDash([]);
+  const [px,py]=w2m(S.pos.x,S.pos.z,ms,mx,my),[tx,ty]=w2m(NP.x,NP.z,ms,mx,my);H.setLineDash([4,3]);H.strokeStyle='#ff4fd8';H.lineWidth=1.2;H.beginPath();H.moveTo(px,py);H.lineTo(tx,ty);for(let k=(S.viaIdx||0)+1;k<(DEST.vias||[]).length;k++){const [a2,b2]=w2m(DEST.vias[k].x,DEST.vias[k].z,ms,mx,my);H.lineTo(a2,b2);}if(DEST.vias&&S.viaIdx<DEST.vias.length){const [a3,b3]=w2m(tdz.x,tdz.z,ms,mx,my);H.lineTo(a3,b3);}H.stroke();H.setLineDash([]);
   H.save();H.translate(px,py);H.rotate(hdg*D2R);H.beginPath();H.moveTo(0,-7);H.lineTo(5,6);H.lineTo(0,3);H.lineTo(-5,6);H.closePath();H.fillStyle='#ffd23a';H.fill();H.restore();H.restore();}
  drawATC(W,Hh);
  if(!hideAll&&miniMap){H.fillStyle='rgba(12,14,18,.82)';H.fillRect(mx,my+ms+6,ms,96);H.fillStyle='#e6edf3';H.font='600 12px ui-monospace,monospace';H.textAlign='left';
@@ -1718,7 +1730,7 @@ function drawND(S2){const {x:c,w,h}=S2,I=INST;c.fillStyle='#000';c.fillRect(0,0,
   if(a%30===0)c.fillText(String(a/10),Math.sin(r)*(R-32),-Math.cos(r)*(R-32));}
  const pt=(x,z)=>{const dx=x-S.pos.x,dz=z-S.pos.z,d=Math.hypot(dx,dz)/1852,b=Math.atan2(dx,-dz)*R2D-I.hdg;return [Math.sin(b*D2R)*d/range*R,-Math.cos(b*D2R)*d/range*R];};
  c.save();c.beginPath();c.arc(0,0,R,0,TAU);c.clip();
- const [tx,ty]=pt(DEST.x,rwyInfo(DEST).tdzZ);c.strokeStyle='#ff4fd8';c.lineWidth=3;c.beginPath();c.moveTo(0,0);if(DEST.via&&!S.viaDone){const [vx,vy]=pt(DEST.via.x,DEST.via.z);c.lineTo(vx,vy);}c.lineTo(tx,ty);c.stroke();
+ const [tx,ty]=pt(DEST.x,rwyInfo(DEST).tdzZ);c.strokeStyle='#ff4fd8';c.lineWidth=3;c.beginPath();c.moveTo(0,0);for(let k=S.viaIdx||0;k<(DEST.vias||[]).length;k++){const [vx,vy]=pt(DEST.vias[k].x,DEST.vias[k].z);c.lineTo(vx,vy);}c.lineTo(tx,ty);c.stroke();
  for(const ap of AIRPORTS){const [a,b]=pt(ap.x,ap.z-ap.len/2),[d,e]=pt(ap.x,ap.z+ap.len/2);c.strokeStyle=ap===DEST?'#ff4fd8':'#3fd0ff';c.lineWidth=4;c.beginPath();c.moveTo(a,b);c.lineTo(d,e);c.stroke();
   c.fillStyle=c.strokeStyle;c.font='bold 15px Arial';c.fillText(ap.code,(a+d)/2+26,(b+e)/2);}
  c.restore();c.strokeStyle='#ffd23a';c.lineWidth=3;c.beginPath();c.moveTo(0,-14);c.lineTo(0,18);c.moveTo(-14,0);c.lineTo(14,0);c.moveTo(-6,14);c.lineTo(6,14);c.stroke();c.restore();
@@ -1930,9 +1942,9 @@ function selfTest(){
  const appr=(id,gear=true)=>()=>{settings.plane=id;settings.start='approach';resetFlight();if(!gear){S.gearDown=false;S.gearPos=0;}};
  settings.weather='clear';settings.windSpd=0;applyEnv();
  const flare=(brake,rev)=>t=>{const agl=S.pos.y-P.gearH-surfH(S.pos.x,S.pos.z);
-  const RI=rwyInfo(DEST);if(DEST.via&&!S.viaDone){const v=DEST.via,dv=Math.hypot(S.pos.x-v.x,S.pos.z-v.z);if(dv<900)S.viaDone=true;
+  const RI=rwyInfo(DEST),VS2=DEST.vias||[];while(S.viaIdx<VS2.length&&Math.hypot(S.pos.x-VS2[S.viaIdx].x,S.pos.z-VS2[S.viaIdx].z)<900)S.viaIdx++;if(S.viaIdx<VS2.length){const v=VS2[S.viaIdx],dv=Math.hypot(S.pos.x-v.x,S.pos.z-v.z);
    const want=(Math.atan2(v.x-S.pos.x,-(v.z-S.pos.z))*R2D+360)%360,he2=((want-headingOf(S.q)+540)%360)-180,roll=-new THREE.Euler().setFromQuaternion(S.q,'YXZ').z*R2D;IN.roll=clamp((clamp(he2*1.5,-30,30)-roll)*.08,-1,1);
-   const tgtY=DEST.elev+P.gearH+(dv+2600)*.045;IN.pitch=clamp(((tgtY-S.pos.y)*.06-S.vel.y)*.12,-.5,.5);const [fcl]=flapCL();S.thr=clamp(S.thr+(Math.sqrt(2*P.W/(1.225*P.S*(P.CL0+P.CLa*P.aApp+fcl)))+10*KT-S.V)*.002,0,1);S.brake=false;return;}
+   const tgtY=DEST.elev+P.gearH+(dv+DEST.viaRem[S.viaIdx])*.045;IN.pitch=clamp(((tgtY-S.pos.y)*.06-S.vel.y)*.12,-.5,.5);const [fcl]=flapCL();S.thr=clamp(S.thr+(Math.sqrt(2*P.W/(1.225*P.S*(P.CL0+P.CLa*P.aApp+fcl)))+10*KT-S.V)*.002,0,1);S.brake=false;return;}
   if(!S.touch&&!S.onGround){const tdz=RI.tdzZ,along=(S.pos.z-tdz)*RI.L,gsAlt=DEST.elev+P.gearH+Math.max(0,along)*Math.tan(RI.gs*D2R);
    const tvs=-S.V*Math.tan(RI.gs*D2R)+(gsAlt-S.pos.y)*.15;IN.pitch=agl<15?clamp((-.8-S.vel.y)*.3,-.3,.7):clamp((tvs-S.vel.y)*.12,-.5,.5);
    const [fcl]=flapCL(),vT=Math.sqrt(2*P.W/(1.225*P.S*(P.CL0+P.CLa*P.aApp+fcl)))+5*KT;S.thr=agl<8&&DEST.kind!=='carrier'?0:clamp(S.thr+(vT-S.V)*.002,0,1);if(DEST.kind==='carrier'&&agl<3)IN.pitch=0;}else IN.pitch=0;
@@ -1978,8 +1990,8 @@ function selfTest(){
   let lastThr=S.thr;window.__thrSw=0;let maxX=0;for(;t<400;t+=h){if(S.onGround&&S.airborne)maxX=Math.max(maxX,Math.abs(S.pos.x-DEST.x));if(S.ap.gsCap&&S.gearPos<.5){S.gearDown=true;S.flapIdx=P.landFlap;}physicsStep(h);if(S.ap.on&&!S.ap.flare)window.__thrSw+=Math.abs(S.thr-lastThr);lastThr=S.thr;{const ag=S.pos.y-P.gearH-Math.max(surfH(S.pos.x,S.pos.z),0);if(false&&(nm.includes('WORST 777')&&ag<40&&!S.ap.rollout&&Math.round(t*120)%24===0)||(st==='air'&&Math.round(t*120)%1200===0))out.push(`   ${nm.slice(9,20)} t${t.toFixed(1)} z${Math.round(S.pos.z-DEST.z)} x${Math.round(S.pos.x-DEST.x)} agl${ag.toFixed(1)} vs${S.vel.y.toFixed(2)} V${(S.V/KT).toFixed(0)} pit${(new THREE.Euler().setFromQuaternion(S.q,'YXZ').x*R2D).toFixed(1)} IN${IN.pitch.toFixed(2)} thr${S.thr.toFixed(2)} cap${+S.ap.locCap}${+S.ap.gsCap} fl${+S.ap.flare} gnd${+S.onGround} gH${Math.round(surfH(S.pos.x,S.pos.z))}`);}if(st==='air'&&0&&Math.round(t*120)%1200===0){const xE=S.pos.x-DEST.x;out.push(`   air t${t.toFixed(0)} x${Math.round(xE)} z${Math.round(S.pos.z-DEST.z)} alt${Math.round(S.pos.y)} V${(S.V/KT).toFixed(0)} hdg${Math.round(headingOf(S.q))} loc${(Math.atan2(xE,S.pos.z-(DEST.z-DEST.len/2))*R2D).toFixed(1)} cap${+S.ap.locCap}${+S.ap.gsCap} on${+S.ap.on} a${(S.alpha*R2D).toFixed(1)}`);}if(S.crashed||(S.onGround&&S.airborne&&Math.hypot(S.vel.x,S.vel.z)<1))break;}
   out.push(`${nm}: t=${t.toFixed(0)}s crashed=${S.crashed} landed=${S.landed} hull=${S.dmg.hull.toFixed(2)} touch=${S.touch?S.touch.fpm:'-'}fpm td@x${S.touch?Math.round(S.touch.x):'-'},z${S.touch?Math.round(S.touch.z):'-'} onRwy=${!!(S.touch&&S.touch.rw)} rolloutMaxX=${maxX.toFixed(1)}m ${S.touch&&S.touch.rw&&maxX<20&&!S.crashed?'PASS':'FAIL'} pos=${Math.round(S.pos.x-DEST.x)},${Math.round(S.pos.z-DEST.z)} | ${[...new Set(window.__msgLog)].filter(x=>/Touch|tip|Hard|gear|Tail|rough/i.test(x)).join(' / ').slice(0,200)}`);}
  settings.weather='clear';settings.windDir=20;settings.windSpd=6;applyEnv();
- out.push('airports: '+AIRPORTS.map(a=>`${a.code}@${Math.round(a.x)},${Math.round(a.z)} elev${a.elev} land${a.land}`).join(' | '));{const hv=AIRPORTS.find(a=>a.id==='HVY');if(hv){let ring=0;for(let k=0;k<12;k++){const an=k/12*TAU;ring+=groundH(hv.x+Math.cos(an)*1300,hv.z+Math.sin(an)*1300);}out.push(`HVY ring mean ${Math.round(ring/12)} vs field ${hv.elev}`);}}
- for(const [nm,key,id,wx] of [['scripted HVY canyon Learjet','hidden','lj45','scattered'],['scripted RBK wave Learjet','ridgeWave','lj45','overcast'],['scripted RBK snow Learjet','ridgeSnow','lj45','snow'],['scripted RBK Learjet','ridge','lj45','scattered'],['scripted HBP A320','harbor','a20n','rain'],['scripted FRL 737 ice','ice','b738','snow'],['scripted CVN F/A-18 trap','carrier','f18','scattered'],
+ out.push('airports: '+AIRPORTS.map(a=>`${a.code}@${Math.round(a.x)},${Math.round(a.z)} elev${a.elev} land${a.land}${a.vias?' vias'+a.vias.length:''}`).join(' | '));{const hv=AIRPORTS.find(a=>a.id==='HVY');if(hv){let ring=0;for(let k=0;k<12;k++){const an=k/12*TAU;ring+=groundH(hv.x+Math.cos(an)*1300,hv.z+Math.sin(an)*1300);}out.push(`HVY ring mean ${Math.round(ring/12)} vs field ${hv.elev}`);}}
+ for(const [nm,key,id,wx] of [['scripted HVY canyon Learjet','hidden','lj45','scattered'],['scripted EGP S-turn Learjet','eagle','lj45','scattered'],['scripted SDL arc A320','saddle','a20n','overcast'],['scripted HVY night snow Learjet','hiddenNight','lj45','snow'],['scripted RBK wave Learjet','ridgeWave','lj45','overcast'],['scripted RBK snow Learjet','ridgeSnow','lj45','snow'],['scripted RBK Learjet','ridge','lj45','scattered'],['scripted HBP A320','harbor','a20n','rain'],['scripted FRL 737 ice','ice','b738','snow'],['scripted CVN F/A-18 trap','carrier','f18','scattered'],
    ['scripted engine-out 737','engine','b738','overcast'],['scripted flapless 737','flapless','b738','scattered'],['scripted gear-fail A320','gear','a20n','scattered'],['scripted windshear 737','shear','b738','storm']]){
   window.__msgLog=[];run(nm,()=>{settings.plane=id;settings.start=key;const st=SCEN[key].set;settings.weather=wx;settings.windDir=st.windDir;settings.windSpd=st.windSpd;applyEnv();resetFlight();S.hook=key==='carrier';S.abSet=0;},flare(true,true),300);
   out[out.length-1]+=` dest=${DEST.code} trap=${S.trap?S.trap.wire:'-'} onRwyEnd=${!!onRunway(S.pos.x,S.pos.z)}`;}

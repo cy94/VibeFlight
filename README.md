@@ -70,6 +70,10 @@ Press **F1** in game for the full key list.
 - **Harbor Point (HBP):** a southbound approach over the sea to a runway that starts at the seawall, in gusty crosswinds.
 - **Frost Lake ice strip (FRL):** braking action poor on the ice, so use reverse thrust.
 - **Carrier trap on CVN Resolute:** F/A-18 with tailhook (J), four arrestor wires and the meatball glideslope light. Miss the wires and it's a bolter; fly in low and it's a ramp strike.
+- **Turning mountain approaches** (sequenced strobes mark the path at night):
+  - **Eagle Pass:** an S-turn canyon, right then hard left.
+  - **Saddle Strip:** a curving 110° valley arc onto a 2.5 km final, flown in the A320.
+  - **Hidden Valley:** at night in snow.
 - **Mountains:** Hidden Valley, a dog-leg canyon approach to a short strip with a waypoint and a late turn onto final. Ridgeback with a tailwind and downdrafts, in a night snowstorm, with an engine failure after takeoff, or with a vehicle on the runway forcing a go-around. Wind over ridges now gives real updrafts on the windward side and downdrafts in the lee.
 - **ACLS:** press Y on the carrier for the F/A-18's automatic carrier landing system.
 - **Failures:** engine failure on short final (asymmetric thrust), flapless approach, a main gear that won't extend, and windshear on short final.
