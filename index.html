@@ -9,8 +9,16 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--fg)}
 #gl{display:block;position:fixed;inset:0;width:100vw;height:100vh}
 #hud{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none}
-.overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(10,22,38,.55),rgba(0,0,0,.82));z-index:10}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;max-width:1000px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.5);max-height:calc(100vh - 32px);overflow:auto;box-sizing:border-box}
+.overlay{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px 0;box-sizing:border-box;background:radial-gradient(ellipse at center,rgba(10,22,38,.55),rgba(0,0,0,.82));z-index:10}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px;max-width:1000px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto;box-sizing:border-box}
+#scenList{max-height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:6px;background:#0c121b}
+#scenList .grp{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin:8px 6px 4px}
+#scenList .sc{display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:8px;cursor:pointer;font-size:13px;border:1px solid transparent}
+#scenList .sc:hover{background:#152030}#scenList .sc.sel{border-color:var(--acc);background:#0e2234}
+#scenList .best{color:var(--acc);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+#result{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;display:none;min-width:340px;max-width:460px}
+#result .grade{font-size:64px;font-weight:800;text-align:center;line-height:1}#result .row2{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid #1c2633}
+#result .ok{color:#3fd47a}#result .bad{color:#ff6b5d}
 h1{margin:0 0 4px;font-size:26px;letter-spacing:.01em}h1 span{color:var(--acc);font-weight:400}
 .sub{color:var(--mut);margin:0 0 6px;font-size:14px}
 h3{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut)}
@@ -48,6 +56,8 @@ details summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:13px}
   <h1>VibeFlight <span>flight sim</span></h1>
   <p class="sub">Take off from <b>Hillcrest Field (HLC)</b> and land on runway 36 at <b>Lakeside International (LKS)</b>, 12 km due north. Follow the magenta pointer on the heading indicator, then the ILS needles and the PAPI lights.</p>
   <div id="swWarn" style="display:none;background:#3a1d12;border:1px solid #a4502a;border-radius:8px;padding:8px 12px;margin:10px 0;font-size:13px;color:#ffd9c2"></div>
+  <h3>Scenario <span style="text-transform:none;letter-spacing:0;color:#6b7a8c">· best grade shown · each scenario presets plane, weather &amp; wind</span></h3>
+  <div id="scenList"></div>
   <h3>Aircraft</h3>
   <div id="planeCards" class="cards"></div>
   <div class="row">
@@ -59,7 +69,7 @@ details summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:13px}
     <h3>Wind &amp; options</h3>
     <label class="inline">Wind from <input id="windDir" type="range" min="0" max="350" step="10" value="20"><span class="v" id="windDirV"></span></label>
     <label class="inline">Wind speed <input id="windSpd" type="range" min="0" max="35" step="1" value="6"><span class="v" id="windSpdV"></span></label>
-    <label class="inline">Scenario <select id="startSel" style="max-width:300px"></select></label>
+    <label class="inline">Difficulty <select id="diffSel"><option value="normal">Normal</option><option value="hard">Hard (default)</option><option value="expert">Expert — no assists</option></select></label>
     <label class="inline"><input id="invertChk" type="checkbox"> Invert pitch keys (W / ↑ = nose up)</label>
     <label class="inline"><input id="shadowChk" type="checkbox" checked> Shadows</label>
     <label class="inline">Graphics <select id="gfxSel"><option value="auto">Auto (keeps FPS smooth)</option><option value="0">Potato</option><option value="1">Low</option><option value="2">Medium</option><option value="3">High</option><option value="4">Ultra</option></select></label>
@@ -69,6 +79,7 @@ details summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:13px}
   <div class="btnrow"><button class="btn" id="resumeBtn" style="display:none">Resume (apply weather)</button><button class="btn primary" id="flyBtn">Fly!</button></div>
  </div>
 </div>
+<div id="result" class="panel"></div>
 <div id="help" class="panel"><h3 style="margin-top:0">Controls (F1 to close)</h3><div class="keys" id="keysList2"></div></div>
 
 <script type="module">
@@ -234,7 +245,7 @@ function placeExtraAirports(){
  let best=null;for(let x=9600;x<=15500;x+=250)for(let z=-13500;z<=1500;z+=250){let mn=1e9,mx=-1e9,sum=0;
   for(let i=-2;i<=2;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*120,z+i*400);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}
   const avg=sum/15;if(avg<700||avg>1450)continue;const sc=mx-mn;if(!best||sc<best.sc)best={x,z,sc,avg};}
- if(best)AIRPORTS.push({id:'RBK',name:'Ridgeback Mountain',short:'Ridgeback',code:'RBK',x:best.x,z:best.z,elev:Math.round(best.avg),len:1600,wid:30,kind:'regional',land:1,ils:false,als:false,corr:{slope:.035,lat:[220,650],len:9000,ends:[1,-1]}});
+ if(best)AIRPORTS.push({id:'RBK',name:'Ridgeback Mountain',short:'Ridgeback',code:'RBK',x:best.x,z:best.z,elev:Math.round(best.avg),len:1250,wid:26,kind:'regional',land:1,ils:false,als:false,corr:{slope:.035,lat:[170,480],len:9000,ends:[1,-1]}});
  let hb=null;for(let x=-6000;x<=6000;x+=500){if(Math.abs(x-1800)<1500)continue;let zc=null;for(let z=-15000;z>=-26000;z-=100){if(rawH(x,z)<1){zc=z;break;}}
   if(zc===null)continue;const zN=zc+40,zS=zN+2100;let mx=-1e9;for(let z=zN;z<=zS;z+=150)mx=Math.max(mx,rawH(x,z));if(!hb||mx<hb.mx)hb={x,zN,mx};}
  if(hb)AIRPORTS.push({id:'HBP',name:'Harbor Point',short:'Harbor',code:'HBP',x:hb.x,z:hb.zN+1050,elev:4,len:2100,wid:40,kind:'regional',land:-1,ils:true,als:true,seawall:true,corr:{slope:.03,lat:[300,800],len:5000,ends:[1]}});
@@ -244,7 +255,7 @@ function placeExtraAirports(){
  function findFlat(x0,x1,z0,z1,len,lo,hi){let b=null;for(let x=x0;x<=x1;x+=250)for(let z=z0;z<=z1;z+=250){if(!sepOK(x,z,4500))continue;let mn=1e9,mx=-1e9,sum=0;
    for(let i=-3;i<=3;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*150,z+i*len/6);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}const avg=sum/21;if(avg<lo||avg>hi)continue;const sc=mx-mn;if(!b||sc<b.sc)b={x,z,sc,avg};}return b;}
  function plainAirport(id,name,short,b,len,wid,land,o={}){if(!b)return;AIRPORTS.push(Object.assign({id,name,short,code:id,x:b.x,z:b.z,elev:Math.max(3,Math.round(b.avg)),len,wid,kind:'regional',land,ils:true,als:true},o));}
- const MTN={ils:false,als:false,corr:{slope:.035,lat:[220,650],len:9000,ends:[1,-1]}};
+ const MTN={ils:false,als:false,corr:{slope:.035,lat:[170,480],len:9000,ends:[1,-1]}};
  function findBowl(x0,x1,z0,z1,lo,hi,len){for(const [rg,sp] of [[40,150],[15,220],[-60,320]]){const b=bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp);if(b)return b;}return null;}
  function bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp){let b=null;for(let x=x0;x<=x1;x+=250)for(let z=z0;z<=z1;z+=250){if(!sepOK(x,z,4500))continue;let mn=1e9,mx=-1e9,sum=0;
    for(let i=-2;i<=2;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*110,z+i*len/4);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}
@@ -255,18 +266,18 @@ function placeExtraAirports(){
   for(let k=1;k<path.length-1;k++){rem[k]=segL.slice(0,k).reduce((a,c)=>a+c,0);}const viaRem=path.slice(1,-1).map((_,k)=>rem[k+1]).reverse();
   AIRPORTS.push({id,name,short,code:id,x:b.x,z:b.z,elev:Math.round(b.avg),len,wid,kind:'regional',land:1,ils:false,als:false,leadIn:true,
    corr:{slope:.03,lat:[200,600],len:2000,ends:[-1]},path,vias,viaRem,pathLen:segL.reduce((a,c)=>a+c,0)});}
- canyonAirport('HVY','Hidden Valley','Hidden Valley',findBowl(-13500,-5000,-15000,-1000,450,1400,1400),1400,28,[[2600,0],[6500,48]]);
- canyonAirport('EGP','Eagle Pass','Eagle Pass',findBowl(8500,15500,-15000,2500,450,1500,1500),1500,30,[[2300,0],[2700,45],[3200,-82]]);
- canyonAirport('RVG','Raven Gorge','Raven Gorge',findBowl(-14000,16000,-16000,12000,400,1500,1400),1400,28,[[2500,0],[6000,-52]]);
+ canyonAirport('HVY','Hidden Valley','Hidden Valley',findBowl(-13500,-5000,-15000,-1000,450,1400,1400),1150,24,[[2600,0],[6500,48]]);
+ canyonAirport('EGP','Eagle Pass','Eagle Pass',findBowl(8500,15500,-15000,2500,450,1500,1500),1200,24,[[2000,0],[2500,55],[3000,-95]]);
+ canyonAirport('RVG','Raven Gorge','Raven Gorge',findBowl(-14000,16000,-16000,12000,400,1500,1400),1150,24,[[2200,0],[5600,-62]]);
  canyonAirport('SDL','Saddle Strip','Saddle',findBowl(-11000,11000,4500,13000,200,1400,2000),2000,36,[[2500,0],...Array.from({length:10},()=>[520,11])]);
- plainAirport('WLF','Wolf Ridge','Wolf Ridge',findBowl(-14000,16000,-16000,12000,450,1400,1600),1600,30,1,MTN);
- plainAirport('GLC','Glacier Col','Glacier Col',findBowl(-14000,16000,-16000,12000,600,1600,1600),1600,30,-1,MTN);
- plainAirport('SMT','Summit Field','Summit',findBowl(-14000,16000,-16000,12000,450,1500,1700),1700,30,1,MTN);
- plainAirport('PNN','Pine Notch','Pine Notch',findBowl(-14000,16000,-16000,12000,350,1500,1600),1600,30,-1,MTN);
- plainAirport('WBK','Westbrook','Westbrook',findFlat(-9000,-1000,-22000,-11000,2400,4,220),2400,45,-1);
- plainAirport('CDF','Cedar Flats','Cedar Flats',findFlat(2000,11000,-13000,-3000,2900,4,250),2900,45,1);
- plainAirport('PNC','Pinecrest','Pinecrest',findFlat(-9000,3000,-6000,6000,2300,4,250),2300,40,-1);
- plainAirport('STH','Stormhaven','Stormhaven',findFlat(3000,13000,-24000,-15000,2500,4,220),2500,45,1);
+ plainAirport('WLF','Wolf Ridge','Wolf Ridge',findBowl(-14000,16000,-16000,12000,450,1400,1600),1250,26,1,MTN);
+ plainAirport('GLC','Glacier Col','Glacier Col',findBowl(-14000,16000,-16000,12000,600,1600,1600),1300,26,-1,MTN);
+ plainAirport('SMT','Summit Field','Summit',findBowl(-14000,16000,-16000,12000,450,1500,1700),1350,26,1,MTN);
+ plainAirport('PNN','Pine Notch','Pine Notch',findBowl(-14000,16000,-16000,12000,350,1500,1600),1250,26,-1,MTN);
+ plainAirport('WBK','Westbrook','Westbrook',findFlat(-9000,-1000,-22000,-11000,2400,4,220),2100,40,-1);
+ plainAirport('CDF','Cedar Flats','Cedar Flats',findFlat(2000,11000,-13000,-3000,2900,4,250),2800,45,1);
+ plainAirport('PNC','Pinecrest','Pinecrest',findFlat(-9000,3000,-6000,6000,2300,4,250),2000,36,-1);
+ plainAirport('STH','Stormhaven','Stormhaven',findFlat(3000,13000,-24000,-15000,2500,4,220),2200,40,1);
  CARRIER={id:'CVN',name:'CVN Resolute',short:'Resolute',code:'CVN',x:-22000,z:-7500,elev:20,len:330,wid:30,kind:'carrier',land:1,ils:true,gs:3.5,tdzOff:76,corr:null};AIRPORTS.push(CARRIER);
 }
 placeExtraAirports();
@@ -281,7 +292,7 @@ function height(x,z){
   h=lerp(ap.elev,h,smooth(0,r.blend,Math.hypot(dx,dz)));
   const c=ap.corr===undefined?{slope:.022,lat:[450,1000],len:7000,ends:[1,-1]}:ap.corr;
   if(ap.path){let best=1e9,along=0,acc=0;for(let k=0;k<ap.path.length-1;k++){const A0=ap.path[k],B0=ap.path[k+1],vx=B0.x-A0.x,vz=B0.z-A0.z,L2=vx*vx+vz*vz,t=clamp(((x-A0.x)*vx+(z-A0.z)*vz)/L2,0,1),px=A0.x+vx*t,pz=A0.z+vz*t,d=Math.hypot(x-px,z-pz);if(d<best){best=d;along=acc+t*Math.sqrt(L2);}acc+=Math.sqrt(L2);}
-   const cap=ap.elev+along*.032+best*.05;if(h>cap)h=lerp(cap,h,smooth(260,700,best));}
+   const cap=ap.elev+along*.032+best*.08;if(h>cap)h=lerp(cap,h,smooth(190,460,best));}
   if(ap.seawall){const thr=rwyInfo(ap).thrZ,out=(thr-z)*ap.land*-1;if(out>12&&Math.abs(x-ap.x)<900)h=Math.min(h,lerp(-1,-14,smooth(12,60,out)));}
   if(c){const lat=smooth(c.lat[0],c.lat[1],Math.abs(x-ap.x));for(const dir of c.ends){const d=dir*(z-ap.z)-ap.len/2;if(d>0&&d<c.len){const cap=ap.elev+d*c.slope;if(h>cap)h=lerp(cap,h,lat);}}}
  }
@@ -553,6 +564,24 @@ function atcUpdate(dt){if(!started||paused||!plane)return;const a=S.atc;a.t+=dt;
    say(`${cs}, parked at stand ${MY_STAND}. Welcome to ${a.ap.name}, have a nice day.`,`${css}, parked at stand ${spellNum(MY_STAND)}. Welcome to ${a.ap.name}, have a nice day.`);
    msgs.length=0;msg(`Parked at stand ${MY_STAND} · ${d.toFixed(1)} m from the mark · flight complete`,999,'#7dff9a');msg('Press Enter to fly again',999,'#c9d4df');}}
 }
+function evalUpdate(){if(!started||!plane)return;const E=S.ev||(S.ev={});if(E.shown)return;const SC=scen(),B=DEST,R=rwyInfo(B);
+ if(SC.start==='takeoff'&&!SC.fail)return;
+ const agl=(S.pos.y-P.gearH-B.elev)/FT,along=(S.pos.z-R.tdzZ)*R.L;
+ if(!E.gate&&S.airborne&&!S.onGround&&agl<500&&agl>100&&along>0&&along<6000){const [fcl]=flapCL(),vT=Math.sqrt(2*P.W/(1.225*P.S*(P.CL0+P.CLa*P.aApp+fcl)))+5*KT;
+  E.gate={dv:(S.V-vT)/KT,fpm:-S.vel.y/FT*60,lat:Math.abs(S.pos.x-B.x),cfg:S.gearPos>.98&&(S.flapIdx>=P.landFlap||S.dmg.flapsJam||SC.fail==='flapless'||!P.model.windows),vT};}
+ if(!E.td&&S.touch&&S.onGround){E.td={past:(R.thrZ-S.pos.z)*R.L,off:Math.abs(S.pos.x-B.x),fpm:S.touch.fpm,dv:E.gate?(S.V-E.gate.vT)/KT:0,rw:!!S.touch.rw};}
+ const done=S.crashed||S.ditched||(S.landed&&Math.hypot(S.vel.x,S.vel.z)<1);if(!done)return;if(!E.doneT)E.doneT=performance.now();if(performance.now()-E.doneT<1500)return;E.shown=1;
+ const items=[];let sc=100;const add=(ok,label,pen)=>{items.push([ok,label]);if(!ok)sc-=pen;};
+ if(S.crashed||S.ditched){sc=0;items.push([false,S.crashed?'Aircraft destroyed':'Ditched in the water']);}
+ else{const G=E.gate;if(G){add(G.dv>-5&&G.dv<15,`Speed at 500 ft ${G.dv>=0?'+':''}${G.dv.toFixed(0)} kt (−5…+15)`,12);add(G.fpm<1000,`Sink at 500 ft ${Math.round(G.fpm)} ft/min (<1000)`,10);add(G.lat<40,`On centerline at 500 ft (${G.lat.toFixed(0)} m off)`,10);add(G.cfg,'Gear down, landing flaps',15);}
+  else add(false,'Never stabilized on final (no 500 ft gate)',20);
+  const T=E.td;if(T){const z0=Math.min(150,B.len*.08),z1=Math.min(700,B.len*.4);add(T.past>=z0&&T.past<=z1,`Touchdown ${Math.round(T.past)} m past threshold (zone ${Math.round(z0)}–${Math.round(z1)} m)`,15);
+   add(T.off<5,`Centerline at touchdown ${T.off.toFixed(1)} m (<5 m)`,Math.min(20,Math.round((T.off-5)*2)+5));add(T.fpm<400,`Touchdown ${T.fpm} ft/min (<400)`,T.fpm<600?10:25);add(Math.abs(T.dv)<10,`Touchdown speed ${T.dv>=0?'+':''}${T.dv.toFixed(0)} kt vs Vref+5 (±10)`,8);add(T.rw,'Touched down on the runway',30);}
+  add(!!onRunway(S.pos.x,S.pos.z),'Stopped on the runway',20);add(S.dmg.hull<.01,`Airframe ${Math.round((1-S.dmg.hull)*100)}% intact`,Math.round(S.dmg.hull*100));}
+ sc=Math.max(0,Math.round(sc));const g=sc>=95?'S':sc>=85?'A':sc>=70?'B':sc>=55?'C':sc>=40?'D':'F';const col={S:'#ffd23a',A:'#3fd47a',B:'#4cc2ff',C:'#e6edf3',D:'#ffb020',F:'#ff4d4d'}[g];
+ const best=bestScores(),k=settings.start+'|'+settings.diff,prev=best[settings.start];let nb=false;if(!prev||sc>prev.s){best[settings.start]={s:sc,g};nb=true;try{localStorage.setItem('vf_best',JSON.stringify(best));}catch(e){}}
+ const el=document.getElementById('result');el.innerHTML=`<div style="text-align:center;color:#8b98a8;font-size:12px;text-transform:uppercase;letter-spacing:.1em">${SC.name} · ${settings.diff}</div><div class="grade" style="color:${col}">${g}</div><div style="text-align:center;font-size:20px;font-weight:700;margin-bottom:10px">${sc} / 100${nb?' · <span style="color:#ffd23a">new best!</span>':prev?` · best ${prev.g} ${prev.s}`:''}</div>`+
+  items.map(([ok,l])=>`<div class="row2"><span>${l}</span><span class="${ok?'ok':'bad'}">${ok?'✓':'✗'}</span></div>`).join('')+`<div style="text-align:center;color:#8b98a8;font-size:12px;margin-top:10px">Enter = fly again · Esc = menu</div>`;el.style.display='block';}
 function drawATC(W,Hh){if(!ATC.log.length||hideAll)return;const now=performance.now(),items=ATC.log.filter(l=>now-l.t<45000);if(!items.length)return;
  const bw=Math.min(460,W*.34),x=W-bw-16;H.font='600 12.5px system-ui';const lines=[];
  for(const it of items){const words=it.text.split(' ');let cur='';for(const w of words){if(H.measureText(cur+w).width>bw-20){lines.push([cur,it]);cur='';}cur+=w+' ';}lines.push([cur,it]);}
@@ -905,25 +934,25 @@ const SCEN={
  takeoff:{name:'Hillcrest → Lakeside (takeoff)',dest:'B',start:'takeoff'},
  approach:{name:'Lakeside ILS 36 — 6 km final',dest:'B',start:'approach'},
  air:{name:'In the air, 900 m, 10 km out',dest:'B',start:'air'},
- ridge:{name:'⛰ Ridgeback Mountain — short, high, no ILS',dest:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'scattered',time:'noon',windDir:200,windSpd:18}},
- harbor:{name:'⚓ Harbor Point — over the sea to a seawall runway',dest:'HBP',start:'approach',dist:7000,set:{plane:'a20n',weather:'rain',time:'dawn',windDir:250,windSpd:24}},
- ice:{name:'❄ Frost Lake ice strip — braking action poor',dest:'FRL',start:'approach',dist:6000,set:{plane:'b738',weather:'snow',time:'night',windDir:320,windSpd:10}},
- carrier:{name:'⚓ Carrier trap — F/A-18 onto CVN Resolute',dest:'CVN',start:'approach',dist:5000,set:{plane:'f18',weather:'scattered',time:'sunset',windDir:0,windSpd:25}},
- hidden:{name:'⛰ Hidden Valley — dog-leg canyon approach',dest:'HVY',start:'via',dist:6500,set:{plane:'lj45',weather:'scattered',time:'noon',windDir:330,windSpd:12}},
- eagle:{name:'⛰ Eagle Pass — S-turn canyon, right then hard left',dest:'EGP',start:'via',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:260,windSpd:14}},
- saddle:{name:'⛰ Saddle Strip — curving 110° valley arc to final',dest:'SDL',start:'via',set:{plane:'a20n',weather:'overcast',time:'dawn',windDir:300,windSpd:12}},
- hiddenNight:{name:'⛰ Raven Gorge — left dog-leg canyon, night & snow',dest:'RVG',fb:'HVY',start:'via',set:{plane:'lj45',weather:'snow',time:'night',windDir:330,windSpd:14}},
- ridgeWave:{name:'⛰ Wolf Ridge — tailwind & mountain-wave downdrafts',dest:'WLF',fb:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:195,windSpd:16}},
- ridgeSnow:{name:'⛰ Glacier Col (rwy 18) — night snowstorm, gusty crosswind',dest:'GLC',fb:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'snow',time:'night',windDir:255,windSpd:20}},
- ridgeEfato:{name:'⛰ Summit Field — engine failure after takeoff',dest:'SMT',fb:'RBK',start:'takeoff',from:'SMT',fail:'efato',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:350,windSpd:8}},
- ridgeBlocked:{name:'⛰ Pine Notch (rwy 18) — go around! vehicle on the runway',dest:'PNN',fb:'RBK',start:'approach',dist:6500,fail:'blocked',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:20,windSpd:10}},
- engine:{name:'🔥 Westbrook (rwy 18) — engine failure on short final',dest:'WBK',fb:'B',start:'approach',fail:'engine',set:{plane:'b738',weather:'overcast',time:'noon',windDir:300,windSpd:14}},
- flapless:{name:'Cedar Flats — flapless approach, flaps jammed up',dest:'CDF',fb:'B',start:'approach',fail:'flapless',set:{plane:'b738',weather:'scattered',time:'noon',windDir:20,windSpd:8}},
- gear:{name:'Pinecrest (rwy 18) — main gear failure, land on one main',dest:'PNC',fb:'B',start:'approach',fail:'gear',set:{plane:'a20n',weather:'scattered',time:'noon',windDir:20,windSpd:6}},
- shear:{name:'🌪 Stormhaven — windshear on short final',dest:'STH',fb:'B',start:'approach',fail:'shear',set:{plane:'b738',weather:'storm',time:'noon',windDir:20,windSpd:15}},
+ ridge:{name:'⛰ Ridgeback Mountain — short, high, no ILS',dest:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:210,windSpd:22},gust:14},
+ harbor:{name:'⚓ Harbor Point — over the sea to a seawall runway',dest:'HBP',start:'approach',dist:7000,set:{plane:'a20n',weather:'storm',time:'dawn',windDir:265,windSpd:30},gust:16},
+ ice:{name:'❄ Frost Lake ice strip — braking action poor',dest:'FRL',start:'approach',dist:6000,set:{plane:'b738',weather:'snow',time:'night',windDir:290,windSpd:18},gust:10},
+ carrier:{name:'⚓ Carrier trap — F/A-18 onto CVN Resolute',dest:'CVN',start:'approach',dist:5000,set:{plane:'f18',weather:'rain',time:'night',windDir:350,windSpd:22},gust:8},
+ hidden:{name:'⛰ Hidden Valley — dog-leg canyon approach',dest:'HVY',start:'via',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:300,windSpd:20},gust:14},
+ eagle:{name:'⛰ Eagle Pass — S-turn canyon, right then hard left',dest:'EGP',start:'via',set:{plane:'lj45',weather:'rain',time:'sunset',windDir:250,windSpd:22},gust:15},
+ saddle:{name:'⛰ Saddle Strip — curving 110° valley arc to final',dest:'SDL',start:'via',set:{plane:'a20n',weather:'rain',time:'night',windDir:290,windSpd:18},gust:12},
+ hiddenNight:{name:'⛰ Raven Gorge — left dog-leg canyon, night & snow',dest:'RVG',fb:'HVY',start:'via',set:{plane:'lj45',weather:'snow',time:'night',windDir:320,windSpd:20},gust:14},
+ ridgeWave:{name:'⛰ Wolf Ridge — tailwind & mountain-wave downdrafts',dest:'WLF',fb:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:190,windSpd:20},gust:16},
+ ridgeSnow:{name:'⛰ Glacier Col (rwy 18) — night snowstorm, gusty crosswind',dest:'GLC',fb:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'snow',time:'night',windDir:260,windSpd:24},gust:16},
+ ridgeEfato:{name:'⛰ Summit Field — engine failure after takeoff',dest:'SMT',fb:'RBK',start:'takeoff',from:'SMT',fail:'efato',set:{plane:'lj45',weather:'overcast',time:'dawn',windDir:150,windSpd:10},gust:10},
+ ridgeBlocked:{name:'⛰ Pine Notch (rwy 18) — go around! vehicle on the runway',dest:'PNN',fb:'RBK',start:'approach',dist:6500,fail:'blocked',set:{plane:'lj45',weather:'rain',time:'sunset',windDir:60,windSpd:16},gust:12},
+ engine:{name:'🔥 Westbrook (rwy 18) — engine failure in a storm',dest:'WBK',fb:'B',start:'approach',fail:'engine',set:{plane:'b738',weather:'storm',time:'noon',windDir:240,windSpd:22},gust:14},
+ flapless:{name:'Cedar Flats — flapless, tailwind, wet runway',dest:'CDF',fb:'B',start:'approach',fail:'flapless',set:{plane:'b738',weather:'rain',time:'noon',windDir:180,windSpd:6},gust:7},
+ gear:{name:'Pinecrest (rwy 18) — gear failure at night, gusty crosswind',dest:'PNC',fb:'B',start:'approach',fail:'gear',set:{plane:'a20n',weather:'overcast',time:'night',windDir:250,windSpd:18},gust:12},
+ shear:{name:'🌪 Stormhaven — microburst windshear on final',dest:'STH',fb:'B',start:'approach',fail:'shear',set:{plane:'b738',weather:'storm',time:'noon',windDir:20,windSpd:18},gust:12},
 };
 function scen(){return SCEN[settings.start]||SCEN.takeoff;}
-const settings={plane:'f16',weather:'scattered',time:'noon',windDir:20,windSpd:6,start:'takeoff',invert:false,shadows:true,gfx:'auto',atcVoice:true};
+const settings={plane:'f16',weather:'scattered',time:'noon',windDir:20,windSpd:6,start:'takeoff',invert:false,shadows:true,gfx:'auto',atcVoice:true,diff:'hard'};
 try{Object.assign(settings,JSON.parse(localStorage.getItem('vibeflight')||'{}'));}catch(e){}
 const env={wind:new V3(),turb:.2,fogBase:2e-5,night:0,precip:null,lightning:false,base:1000,fogCol:new THREE.Color(),cover:0};
 const sunDir=new V3();
@@ -945,7 +974,7 @@ function applyEnv(){
  if(cityMat)cityMat.emissiveIntensity=env.night>.3?1.6*env.night:0;
  for(const m of nightMats)m.emissiveIntensity=env.night>.3?.55*env.night:0;for(const p of lightPools)p.material.opacity=env.night>.3?.5*env.night:0;
  lightMat.uniforms.uNight.value=env.night;
- env.turb=w.turb;env.precip=w.precip;env.lightning=!!w.lightning;env.base=w.base;env.heavy=!!w.heavy;env.cover=w.cover;
+ const DF={normal:{t:1,g:1},hard:{t:1.3,g:1.5},expert:{t:1.6,g:2}}[settings.diff]||{t:1,g:1};env.turb=w.turb*DF.t;env.gustK=(Math.max(0,w.turb-.1)*4+settings.windSpd*KT*.35+(scen().gust||0)*KT)*DF.g;env.precip=w.precip;env.lightning=!!w.lightning;env.base=w.base;env.heavy=!!w.heavy;env.cover=w.cover;
  const wd=settings.windDir*D2R,ws=settings.windSpd*KT;env.wind.set(-Math.sin(wd)*ws,0,Math.cos(wd)*ws);
  cloudMat.uniforms.lit.value.set(t.night?'#2a3140':'#ffffff').lerp(new THREE.Color(t.night?'#1a1e26':'#b9bec4'),w.dim);
  if(settings.time==='sunset'||settings.time==='dawn')cloudMat.uniforms.lit.value.lerp(new THREE.Color(t.sun),.45);
@@ -1013,7 +1042,7 @@ function resetFlight(){
  if(plane)scene.remove(plane.group);plane=buildPlane(P);scene.add(plane.group);
  S.flapIdx=Math.min(S.flapIdx,P.flaps.length-1);S.flapDeg=Math.min(S.flapDeg,P.flaps[P.flaps.length-1].deg);if(cockpit)ckScene.remove(cockpit.group);cockpit=buildCockpit(P);ckScene.add(cockpit.group);showHUD=!P.model.windows;
  if(fireball){scene.remove(fireball);fireball=null;}
- clearFX();clearRoute();S.ap=null;S.lastRA=undefined;newCallsign();if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}ATC.log.length=0;S.atc={t:0};Object.assign(S,{abSet:0,abArmed:false,abK:0,abActive:false,abWasActive:false,decel:0,prevGS:0,brakeK:0,slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
+ clearFX();clearRoute();S.ap=null;S.ev=null;S.gustE=null;{const re=document.getElementById('result');if(re)re.style.display='none';}S.lastRA=undefined;newCallsign();if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}ATC.log.length=0;S.atc={t:0};Object.assign(S,{abSet:0,abArmed:false,abK:0,abActive:false,abWasActive:false,decel:0,prevGS:0,brakeK:0,slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
  IN.pitch=IN.roll=IN.yaw=0;orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;
  let SC=scen();const apBy=id=>AIRPORTS.find(a=>a.id===id);DEST=apBy(SC.dest||'B')||apBy(SC.fb||'B')||AIRPORTS[1];const A=AIRPORTS[0],B=DEST,RI=rwyInfo(B);
  S.hook=false;S.trap=null;S.engOut=false;S.engFailArmed=SC.fail==='engine';S.shear=SC.fail==='shear'?{k:0,said:0}:null;
@@ -1109,7 +1138,9 @@ function physicsStep(dt){
  _turb.x*=wf;_turb.z*=wf;_wind.copy(env.wind).multiplyScalar(wf).add(_turb);
  if(agl<900){const wsp=env.wind.length();if(wsp>2){const wx=env.wind.x/wsp,wz=env.wind.z/wsp,up=groundH(s.pos.x-wx*90,s.pos.z-wz*90),dn=groundH(s.pos.x+wx*90,s.pos.z+wz*90);
   const sl=clamp((dn-up)/180,-.7,.7);s.oro=sl*wsp*wf*1.1*(1-smooth(250,900,agl));_wind.y+=s.oro;}}
- if(s.shear&&!s.onGround&&s.airborne){const RI=rwyInfo(DEST),al=(s.pos.z-RI.tdzZ)*RI.L,k=smooth(3300,2500,al)*(1-smooth(1300,650,al));s.shear.k=k;if(k>.01){_wind.y-=8.5*k;_wind.z-=RI.L*12*k;}}
+ if(env.gustK>.3&&!s.crashed){const gs2=s.gustE;if(!gs2||gs2.t>gs2.T+gs2.w){const ws=env.wind.length(),base=ws>1?Math.atan2(env.wind.x,env.wind.z):Math.random()*TAU;s.gustE={t:0,T:1.6+Math.random()*2.6,w:1.5+Math.random()*5,mag:env.gustK*(.45+Math.random()*.75),ang:base+(Math.random()-.5)*1.6};}
+  const g3=s.gustE;g3.t+=dt;if(g3.t<g3.T){const k=Math.sin(Math.PI*g3.t/g3.T);_wind.x+=Math.sin(g3.ang)*g3.mag*k*wf;_wind.z+=Math.cos(g3.ang)*g3.mag*k*wf;_wind.y-=g3.mag*.22*k*clamp(agl/60,0,1);}}
+ if(s.shear&&!s.onGround&&s.airborne){const RI=rwyInfo(DEST),al=(s.pos.z-RI.tdzZ)*RI.L,hw=smooth(4200,3600,al)*(1-smooth(3000,2600,al)),dd=smooth(3000,2500,al)*(1-smooth(1600,1100,al)),tw=smooth(2000,1500,al)*(1-smooth(700,350,al));s.shear.k=Math.max(hw,dd,tw);_wind.z+=RI.L*14*hw;_wind.y-=11*dd;_wind.z-=RI.L*16*tw;}
  _va.copy(s.vel).sub(_wind);const V=_va.length();
  _qi.copy(s.q).invert();_vb.copy(_va).applyQuaternion(_qi);
  let alpha=0,beta=0;if(V>2){alpha=Math.atan2(-_vb.y,-_vb.z);beta=Math.asin(clamp(_vb.x/V,-1,1));}
@@ -1124,7 +1155,7 @@ function physicsStep(dt){
  else if(alpha<stN){cl=Math.min(P.CL0+P.CLa*stN+fcl-(alpha-stN)*3.2,1.05*Math.sin(2*alpha));s.stalled=true;}
  else{cl=clLin;s.stalled=false;}
  if(Math.abs(alpha)>Math.PI/2)cl=1.05*Math.sin(2*alpha);
- s.spoilers=s.onGround&&(s.thr<.08||s.rev>0)&&Math.hypot(s.vel.x,s.vel.z)>15&&!s.crashed;
+ s.spoilers=settings.diff!=='expert'&&s.onGround&&(s.thr<.08||s.rev>0)&&Math.hypot(s.vel.x,s.vel.z)>15&&!s.crashed;
  if(s.spoilers&&!s.splrMsg&&s.airborne){msg(P.ab?'Aerobraking':'Spoilers deployed',2,'#7fd6ff');s.splrMsg=1;}
  cl*=(1+.1*(1-ge))*(1-.35*(D.wingL+D.wingR))*(s.crashed?.35:1)*(s.spoilers?(P.ab?.6:.3):1);
  let cd=P.CD0+fcd+P.gearCD*s.gearPos+(s.brake&&!s.onGround?P.sbCD:0)+P.K*ge*cl*cl+P.waveK*Math.max(0,M-P.mcrit)**2+1.1*Math.sin(alpha)**2*smooth(.15,.5,Math.abs(alpha))+.5*beta*beta
@@ -1172,7 +1203,7 @@ function physicsStep(dt){
   else cR=IN.yaw*.5*clamp(gsp/6,0,1)*clamp(1-gsp/90,.15,1)+IN.yaw*P.yawRate*D2R*eff*.5;
   const liftFrac=clamp((_F.y+P.W)/P.W,0,1);cQ-=(1-liftFrac)*.12;cP=0;
  }
- if(s.onGround||agl-P.gearH<6){const pNow=Math.asin(clamp(_f.y,-1,1))*R2D,rot=(P.ab?6:(P.model.windows?3.2:4.5))*D2R;
+ if(settings.diff!=='expert'&&(s.onGround||agl-P.gearH<6)){const pNow=Math.asin(clamp(_f.y,-1,1))*R2D,rot=(P.ab?6:(P.model.windows?3.2:4.5))*D2R;
   if(cQ>rot)cQ=rot;if(cQ>0)cQ*=clamp((P.tailStrike-1.5-pNow)/4,0,1);}
  s.dbgQ=cQ;const k=1-Math.exp(-P.resp*dt);
  s.p+=(cP-s.p)*k;s.qr+=(cQ-s.qr)*k;s.r+=(cR-s.r)*k;
@@ -1210,7 +1241,7 @@ function physicsStep(dt){
      else if(!s.bellyMsg){msg(mainsOK?'Gear-up belly landing!':'Sliding on the belly!',4,'#ff5a4d');s.bellyMsg=1;}
      addHull(.08+Math.max(0,vn-2)*.06);
      if((P.model.pods||[]).some(p=>p.pylon==='wing')&&D.eng<.6){D.eng=Math.min(1,D.eng+.6);msg('Engines scraped the ground',3,'#ffb020');}
-    }else if(vn>P.maxSink){const sr=vn/P.maxSink;
+    }else if(vn>P.maxSink*({normal:1,hard:.9,expert:.78}[settings.diff]||1)){const sr=vn/(P.maxSink*({normal:1,hard:.9,expert:.78}[settings.diff]||1));
      if(sr<1.5){addHull((sr-1)*.3);msg('Hard landing — gear strained',3,'#ffb020');
       if(sr>1.25&&Math.random()<.5){const left=Math.random()<.5;if(left)D.gearL=true;else D.gearR=true;msg(`${left?'Left':'Right'} main gear collapsed!`,4,'#ff5a4d');}}
      else{D.gearL=D.gearR=true;if(pitch<3)D.gearN=true;addHull(.15+(sr-1.5)*.18);msg('Very hard landing — gear collapsed!',4,'#ff5a4d');}
@@ -1254,7 +1285,7 @@ function physicsStep(dt){
       if(landing||rto){const tgt=[0,1.2,1.5,2.2,4.3,9][s.abSet];s.abK=clamp((s.abK||0)+(tgt-s.decel)*dt*.35,0,1);bk=Math.max(bk,s.abK);s.abActive=true;
        if(!s.abWasActive)msg('Autobrake '+AB_NAMES[s.abSet]+' active',2,'#4cc2ff');s.abWasActive=true;}}}
     s.brakeK=bk;
-    const iceRw=(onRunway(s.pos.x,s.pos.z)||{}).ice;mu=iceRw?.012+bk*.09:(paved?.018:.07)+bk*(paved?.42:.3)+(D.gearN?.12:0);}else mu=paved?.35:.5;
+    const iceRw=(onRunway(s.pos.x,s.pos.z)||{}).ice,wet={rain:.62,storm:.55,worst:.55,snow:.4}[settings.weather]||1;mu=iceRw?.012+bk*.09:(paved?.018:.07)+bk*(paved?.42:.3)*wet+(D.gearN?.12:0);}else mu=paved?.35:.5;
    const dec=mu*N/P.mass*dt;vF=Math.abs(vF)<=dec?0:vF-Math.sign(vF)*dec;
    if(s.trap){const td=34*dt;vF=Math.abs(vF)<=td?0:vF-Math.sign(vF)*td;}
    const sp=Math.abs(vF);
@@ -1886,20 +1917,23 @@ function renderCockpit(){if(camMode!==1||!cockpit||!plane)return;cockpit.update(
  renderer.autoClear=false;renderer.clearDepth();renderer.render(ckScene,ckCam);renderer.autoClear=true;}
 
 // ============================================================ menu
-const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['X','Autobrake OFF/1/2/3/MAX (RTO on ground) · airliners'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['J','Tailhook (fighters, for the carrier)'],['Y','Autopilot / CAT III autoland (airliners): captures ILS, flares, rolls out'],['Z','ATC voice on/off (transcript always shown)'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Press any button to activate · sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
+const KEYS=[['W/S or ↑/↓','Pitch (stick fwd/back)'],['A/D or ←/→','Roll'],['Q/E','Rudder / nose-wheel steer'],['R / F','Throttle up / down (top = afterburner)'],['F at idle, on ground','Thrust reverse (airliners, Learjet) · R cancels'],['G','Landing gear'],['V / Shift+V  ( ] / [ )','Flaps extend / retract'],['B or Space (hold)','Wheel brakes / speed brake'],['X','Autobrake OFF/1/2/3/MAX (RTO on ground) · airliners'],['L / T','Landing lights / taxi + turnoff lights'],['N','Nav + beacon lights'],['O','Strobes'],['C / 1-4','Camera: chase, cockpit, fly-by, tower'],['Mouse drag · wheel','Look around · zoom'],['H / I','Toggle cockpit HUD / instruments'],['Shift+H','Hide all overlays (clean view)'],['K','Map: auto / island / airport diagram'],['—','Each landing is graded S/A/B/C/D/F (stabilized at 500 ft, touchdown zone, centerline, sink, rollout)'],['J','Tailhook (fighters, for the carrier)'],['Y','Autopilot / CAT III autoland (airliners): captures ILS, flares, rolls out'],['Z','ATC voice on/off (transcript always shown)'],['P','Pause'],['M','Mute'],['Enter','Restart flight'],['Esc','Menu / weather'],['Gamepad','Press any button to activate · sticks, triggers = throttle, A gear, X/Y flaps, B brake']];
 for(const id of ['keysList','keysList2'])document.getElementById(id).innerHTML=KEYS.map(([k,v])=>`<div><kbd>${k}</kbd><span>${v}</span></div>`).join('');
 function seg(id,obj,key){const el=document.getElementById(id);el.innerHTML='';for(const [k,v] of Object.entries(obj)){const b=document.createElement('button');b.textContent=v.name;b.className=settings[key]===k?'sel':'';b.onclick=()=>{settings[key]=k;seg(id,obj,key);};el.appendChild(b);}}
 function cards(){const el=document.getElementById('planeCards');el.innerHTML='';for(const p of PLANES){const d=document.createElement('div');d.className='card'+(settings.plane===p.id?' sel':'');
  d.innerHTML=`<b>${p.name}</b><small>${p.role}<br>Thrust ${Math.round(p.thrust/1000)}${p.ab?'/'+Math.round(p.ab/1000):''} kN · ${Math.round(p.mass/1000)} t<br>Vr ${Math.round(p.vr/KT)} kt · Vref ${Math.round(p.vref/KT)} kt</small>`;d.onclick=()=>{settings.plane=p.id;cards();};el.appendChild(d);}}
 const wd=document.getElementById('windDir'),wsp=document.getElementById('windSpd');
 function syncInputs(){wd.value=settings.windDir;wsp.value=settings.windSpd;document.getElementById('windDirV').textContent=String(settings.windDir).padStart(3,'0')+'°';document.getElementById('windSpdV').textContent=settings.windSpd+' kt';
- document.getElementById('startSel').value=settings.start;document.getElementById('invertChk').checked=settings.invert;document.getElementById('shadowChk').checked=settings.shadows;document.getElementById('gfxSel').value=settings.gfx;}
+ document.getElementById('diffSel').value=settings.diff;document.getElementById('invertChk').checked=settings.invert;document.getElementById('shadowChk').checked=settings.shadows;document.getElementById('gfxSel').value=settings.gfx;}
 document.getElementById('worstBtn').onclick=()=>{Object.assign(settings,{weather:'worst',time:'night',windDir:270,windSpd:30,plane:'a388',start:'approach'});cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();};
+document.getElementById('diffSel').onchange=e=>{settings.diff=e.target.value;};
 document.getElementById('gfxSel').onchange=e=>{settings.gfx=e.target.value;if(settings.gfx!=='auto')qLevel=+settings.gfx;FPS.ceil=4;};
 wd.oninput=()=>{settings.windDir=+wd.value;syncInputs();};wsp.oninput=()=>{settings.windSpd=+wsp.value;syncInputs();};
-{const sel=document.getElementById('startSel');sel.innerHTML=Object.entries(SCEN).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
- sel.onchange=e=>{settings.start=e.target.value;const st=SCEN[settings.start].set;if(st)Object.assign(settings,st);cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();};}document.getElementById('invertChk').onchange=e=>settings.invert=e.target.checked;document.getElementById('shadowChk').onchange=e=>settings.shadows=e.target.checked;
-function openMenu(inFlight){const sw=document.getElementById('swWarn');if(/swiftshader|llvmpipe|softpipe|software/i.test(GPU)){sw.style.display='block';sw.innerHTML='⚠ Your browser is drawing 3D <b>without GPU acceleration</b> (software renderer: '+GPU.replace(/[<>]/g,'').slice(0,60)+'). It will be slow. Turn on <b>hardware acceleration</b> in the browser settings (Chrome: Settings → System; check chrome://gpu) and reload.';}paused=true;keys.clear();cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();
+function bestScores(){try{return JSON.parse(localStorage.getItem('vf_best')||'{}');}catch(e){return {};}}
+function scenList(){const el=document.getElementById('scenList');const B=bestScores();const groups=[['Classic',['takeoff','approach','air']],['Airports',['ridge','harbor','ice','carrier']],['Mountain & canyon',['hidden','eagle','saddle','hiddenNight','ridgeWave','ridgeSnow','ridgeEfato','ridgeBlocked']],['Emergencies',['engine','flapless','gear','shear']]];
+ el.innerHTML=groups.map(([g,ks])=>`<div class="grp">${g}</div>`+ks.filter(k=>SCEN[k]).map(k=>`<div class="sc${settings.start===k?' sel':''}" data-k="${k}"><span>${SCEN[k].name}</span><span class="best">${B[k]?B[k].g+' · '+B[k].s:''}</span></div>`).join('')).join('');
+ el.querySelectorAll('.sc').forEach(d=>d.onclick=()=>{settings.start=d.dataset.k;const st=SCEN[settings.start].set;if(st)Object.assign(settings,st);cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();scenList();});}document.getElementById('invertChk').onchange=e=>settings.invert=e.target.checked;document.getElementById('shadowChk').onchange=e=>settings.shadows=e.target.checked;
+function openMenu(inFlight){document.getElementById('result').style.display='none';setTimeout(scenList,0);const sw=document.getElementById('swWarn');if(/swiftshader|llvmpipe|softpipe|software/i.test(GPU)){sw.style.display='block';sw.innerHTML='⚠ Your browser is drawing 3D <b>without GPU acceleration</b> (software renderer: '+GPU.replace(/[<>]/g,'').slice(0,60)+'). It will be slow. Turn on <b>hardware acceleration</b> in the browser settings (Chrome: Settings → System; check chrome://gpu) and reload.';}paused=true;keys.clear();cards();seg('weatherBtns',WEATHER,'weather');seg('timeBtns',TIMES,'time');syncInputs();
  document.getElementById('resumeBtn').style.display=inFlight&&started&&!S.crashed?'':'none';document.getElementById('menu').style.display='flex';}
 function closeMenu(){document.getElementById('menu').style.display='none';try{localStorage.setItem('vibeflight',JSON.stringify(settings));}catch(e){}applyEnv();applyQuality();Snd.init();paused=false;}
 document.getElementById('flyBtn').onclick=()=>{closeMenu();msgs.length=0;resetFlight();started=true;};
@@ -1915,7 +1949,7 @@ function frame(now){
   readInput(dt);
   acc+=dt;const h=1/120;let n=0;while(acc>=h&&n<12){physicsStep(h);acc-=h;n++;}if(S.crashed)S.crashT+=dt;
  }
- updateVisuals(dt,t);updateFX(dt);updateCamera(dt);atcUpdate(dt);radioCallouts();
+ updateVisuals(dt,t);updateFX(dt);updateCamera(dt);atcUpdate(dt);radioCallouts();evalUpdate();
  renderer.render(scene,camera);renderCockpit();
  FPS.acc+=dt;FPS.n++;if(FPS.acc>=1){FPS.v=FPS.n/FPS.acc;FPS.acc=0;FPS.n=0;autoQuality(t);}
  hudDt+=dt;if(++hudFrame%QL[qLevel].hud===0){drawHUD(hudDt);hudDt=0;}
@@ -1943,6 +1977,7 @@ setTimeout(()=>{
   if(qs.get('demo')==='taxi'){const B=DEST;S.pos.set(B.x,B.elev+P.gearH,B.z-1250);S.vel.set(0,0,-8);S.q.copy(quatFrom(0,0,0));S.onGround=true;S.airborne=true;S.airT=0;S.gearDown=true;S.gearPos=1;S.thr=0;S.n1=.05;
    S.atc.start=1;S.atc.land=1;S.time=124;say(`Lakeside Tower: ${ATC.cs}, wind 020 at 6, runway 36, cleared to land.`);atcUpdate(.01);msgs.length=0;camMode=+(qs.get('cam')||0);}}
  if(qs.has('selftest'))setTimeout(selfTest,50);
+ if(qs.has('evaltest'))setTimeout(()=>{const R=rwyInfo(DEST);S.pos.set(DEST.x+1,DEST.elev+P.gearH,R.thrZ-R.L*900);S.vel.set(0,0,0);S.onGround=true;S.airborne=true;S.landed=true;S.touch={fpm:280,rw:DEST};S.ev={gate:{dv:3,fpm:720,lat:4,cfg:true,vT:70},td:{past:420,off:2.1,fpm:280,dv:2,rw:true}};},1500);
  if(qs.has('trace')){const t0=performance.now();let lastT=0;const iv=setInterval(()=>{const e=new THREE.Euler().setFromQuaternion(S.q,'YXZ');const tt=(performance.now()-t0)/1000;
   console.log(`TRACE t=${tt.toFixed(2)} pitch=${(e.x*R2D).toFixed(2)} y=${(S.pos.y-AIRPORTS[0].elev).toFixed(3)} vy=${S.vel.y.toFixed(3)} qr=${S.qr.toFixed(3)} gnd=${+S.onGround} airT=${S.airT.toFixed(2)} IN=${IN.pitch.toFixed(2)} thr=${S.thr.toFixed(2)} fps=${FPS.v.toFixed(0)} q=${qLevel} warn=${S.warn} tail=${S.dmg.tail.toFixed(2)}`);if(tt>12)clearInterval(iv);},250);}
  requestAnimationFrame(frame);

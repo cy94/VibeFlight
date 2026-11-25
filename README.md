@@ -79,6 +79,18 @@ Press **F1** in game for the full key list.
 - **Failures:** engine failure on short final (asymmetric thrust), flapless approach, a main gear that won't extend, and windshear on short final.
 - **CAT III autoland (Y):** for the airliners, plus a ☠ worst-case preset with zero visibility, night and a 30 kt crosswind.
 
+**Challenge**
+- **Graded landings:** every landing gets a grade from S to F, like a check ride, and your best grade per scenario is saved. It checks:
+  - stabilized at 500 ft: speed −5…+15 kt, sink rate under 1,000 ft/min, on the centerline, gear down and landing flaps
+  - a touchdown-zone hit, within 5 m of the centerline, under 400 ft/min, at the right speed
+  - stopping on the runway with no damage
+- **Gusts:** sudden 10–25 kt gusts, mostly from the wind direction, on top of the turbulence. Wet, snowy and stormy runways reduce braking.
+- **Difficulty:** Normal, Hard (the default) or Expert. Expert removes the tail-strike protection, rotation limiting and automatic ground spoilers, lowers the sink-rate damage limit, and makes turbulence and gusts much stronger.
+- **Harder scenarios:**
+  - 1.15–1.35 km mountain strips and narrow canyons
+  - stacked emergencies: an engine failure in a storm, flapless with a tailwind on a wet runway, a gear failure at night in a gusty crosswind
+  - a microburst: a headwind balloon, then a strong downdraft, then a tailwind
+
 **Cameras**: chase, cockpit, fly-by and tower, with mouse-drag look-around and zoom.
 
 **Sound**: engine and turbine, afterburner, wind, rain, tyre screech on touchdown, runway rumble, gear motor and clunk, warning tones and thunder.
