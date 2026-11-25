@@ -240,8 +240,13 @@ function placeExtraAirports(){
  if(hb)AIRPORTS.push({id:'HBP',name:'Harbor Point',short:'Harbor',code:'HBP',x:hb.x,z:hb.zN+1050,elev:4,len:2100,wid:40,kind:'regional',land:-1,ils:true,als:true,seawall:true,corr:{slope:.03,lat:[300,800],len:5000,ends:[1]}});
  AIRPORTS.push({id:'FRL',name:'Frost Lake Ice Strip',short:'Frost Lake',code:'FRL',x:LAKE.x,z:LAKE.z,elev:.6,len:1800,wid:40,kind:'regional',land:1,ils:true,als:false,ice:true,corr:null});
  const fly=[];
+ function sepOK(x,z,d){return !AIRPORTS.some(a=>Math.hypot(a.x-x,a.z-z)<d)&&Math.hypot(x-CITY.x,z-CITY.z)>CITY.r+1500&&Math.hypot(x-TOWN.x,z-TOWN.z)>TOWN.r+1200&&Math.hypot(x-LAKE.x,(z-LAKE.z)*1.3)>3400&&Math.hypot(x-1800,z+22200)>2500;}
+ function findFlat(x0,x1,z0,z1,len,lo,hi){let b=null;for(let x=x0;x<=x1;x+=250)for(let z=z0;z<=z1;z+=250){if(!sepOK(x,z,4500))continue;let mn=1e9,mx=-1e9,sum=0;
+   for(let i=-3;i<=3;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*150,z+i*len/6);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}const avg=sum/21;if(avg<lo||avg>hi)continue;const sc=mx-mn;if(!b||sc<b.sc)b={x,z,sc,avg};}return b;}
+ function plainAirport(id,name,short,b,len,wid,land,o={}){if(!b)return;AIRPORTS.push(Object.assign({id,name,short,code:id,x:b.x,z:b.z,elev:Math.max(3,Math.round(b.avg)),len,wid,kind:'regional',land,ils:true,als:true},o));}
+ const MTN={ils:false,als:false,corr:{slope:.035,lat:[220,650],len:9000,ends:[1,-1]}};
  function findBowl(x0,x1,z0,z1,lo,hi,len){for(const [rg,sp] of [[40,150],[15,220],[-60,320]]){const b=bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp);if(b)return b;}return null;}
- function bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp){let b=null;for(let x=x0;x<=x1;x+=250)for(let z=z0;z<=z1;z+=250){if(AIRPORTS.some(a=>Math.hypot(a.x-x,a.z-z)<6000))continue;let mn=1e9,mx=-1e9,sum=0;
+ function bowlPass(x0,x1,z0,z1,lo,hi,len,rg,sp){let b=null;for(let x=x0;x<=x1;x+=250)for(let z=z0;z<=z1;z+=250){if(!sepOK(x,z,4500))continue;let mn=1e9,mx=-1e9,sum=0;
    for(let i=-2;i<=2;i++)for(let j=-1;j<=1;j++){const h=rawH(x+j*110,z+i*len/4);mn=Math.min(mn,h);mx=Math.max(mx,h);sum+=h;}
    const avg=sum/15;if(avg<lo||avg>hi)continue;let ring=0;for(let k=0;k<12;k++){const an=k/12*TAU;ring+=rawH(x+Math.cos(an)*1300,z+Math.sin(an)*1300);}ring/=12;
    if(ring<avg+rg||mx-mn>sp)continue;const sc=(mx-mn)-.35*(ring-avg);if(!b||sc<b.sc)b={x,z,sc,avg};}return b;}
@@ -252,7 +257,16 @@ function placeExtraAirports(){
    corr:{slope:.03,lat:[200,600],len:2000,ends:[-1]},path,vias,viaRem,pathLen:segL.reduce((a,c)=>a+c,0)});}
  canyonAirport('HVY','Hidden Valley','Hidden Valley',findBowl(-13500,-5000,-15000,-1000,450,1400,1400),1400,28,[[2600,0],[6500,48]]);
  canyonAirport('EGP','Eagle Pass','Eagle Pass',findBowl(8500,15500,-15000,2500,450,1500,1500),1500,30,[[2300,0],[2700,45],[3200,-82]]);
+ canyonAirport('RVG','Raven Gorge','Raven Gorge',findBowl(-14000,16000,-16000,12000,400,1500,1400),1400,28,[[2500,0],[6000,-52]]);
  canyonAirport('SDL','Saddle Strip','Saddle',findBowl(-11000,11000,4500,13000,200,1400,2000),2000,36,[[2500,0],...Array.from({length:10},()=>[520,11])]);
+ plainAirport('WLF','Wolf Ridge','Wolf Ridge',findBowl(-14000,16000,-16000,12000,450,1400,1600),1600,30,1,MTN);
+ plainAirport('GLC','Glacier Col','Glacier Col',findBowl(-14000,16000,-16000,12000,600,1600,1600),1600,30,-1,MTN);
+ plainAirport('SMT','Summit Field','Summit',findBowl(-14000,16000,-16000,12000,450,1500,1700),1700,30,1,MTN);
+ plainAirport('PNN','Pine Notch','Pine Notch',findBowl(-14000,16000,-16000,12000,350,1500,1600),1600,30,-1,MTN);
+ plainAirport('WBK','Westbrook','Westbrook',findFlat(-9000,-1000,-22000,-11000,2400,4,220),2400,45,-1);
+ plainAirport('CDF','Cedar Flats','Cedar Flats',findFlat(2000,11000,-13000,-3000,2900,4,250),2900,45,1);
+ plainAirport('PNC','Pinecrest','Pinecrest',findFlat(-9000,3000,-6000,6000,2300,4,250),2300,40,-1);
+ plainAirport('STH','Stormhaven','Stormhaven',findFlat(3000,13000,-24000,-15000,2500,4,220),2500,45,1);
  CARRIER={id:'CVN',name:'CVN Resolute',short:'Resolute',code:'CVN',x:-22000,z:-7500,elev:20,len:330,wid:30,kind:'carrier',land:1,ils:true,gs:3.5,tdzOff:76,corr:null};AIRPORTS.push(CARRIER);
 }
 placeExtraAirports();
@@ -898,15 +912,15 @@ const SCEN={
  hidden:{name:'⛰ Hidden Valley — dog-leg canyon approach',dest:'HVY',start:'via',dist:6500,set:{plane:'lj45',weather:'scattered',time:'noon',windDir:330,windSpd:12}},
  eagle:{name:'⛰ Eagle Pass — S-turn canyon, right then hard left',dest:'EGP',start:'via',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:260,windSpd:14}},
  saddle:{name:'⛰ Saddle Strip — curving 110° valley arc to final',dest:'SDL',start:'via',set:{plane:'a20n',weather:'overcast',time:'dawn',windDir:300,windSpd:12}},
- hiddenNight:{name:'⛰ Hidden Valley — night & snow, follow the strobes',dest:'HVY',start:'via',set:{plane:'lj45',weather:'snow',time:'night',windDir:330,windSpd:14}},
- ridgeWave:{name:'⛰ Ridgeback — tailwind & mountain-wave downdrafts',dest:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:195,windSpd:16}},
- ridgeSnow:{name:'⛰ Ridgeback — night snowstorm, gusty crosswind',dest:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'snow',time:'night',windDir:255,windSpd:20}},
- ridgeEfato:{name:'⛰ Ridgeback — engine failure after takeoff',dest:'RBK',start:'takeoff',from:'RBK',fail:'efato',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:350,windSpd:8}},
- ridgeBlocked:{name:'⛰ Ridgeback — go around! vehicle on the runway',dest:'RBK',start:'approach',dist:6500,fail:'blocked',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:20,windSpd:10}},
- engine:{name:'🔥 Engine failure on short final',dest:'B',start:'approach',fail:'engine',set:{plane:'b738',weather:'overcast',time:'noon',windDir:300,windSpd:14}},
- flapless:{name:'Flapless approach — flaps jammed up',dest:'B',start:'approach',fail:'flapless',set:{plane:'b738',weather:'scattered',time:'noon',windDir:20,windSpd:8}},
- gear:{name:'Main gear failure — land on one main',dest:'B',start:'approach',fail:'gear',set:{plane:'a20n',weather:'scattered',time:'noon',windDir:20,windSpd:6}},
- shear:{name:'🌪 Windshear on short final',dest:'B',start:'approach',fail:'shear',set:{plane:'b738',weather:'storm',time:'noon',windDir:20,windSpd:15}},
+ hiddenNight:{name:'⛰ Raven Gorge — left dog-leg canyon, night & snow',dest:'RVG',fb:'HVY',start:'via',set:{plane:'lj45',weather:'snow',time:'night',windDir:330,windSpd:14}},
+ ridgeWave:{name:'⛰ Wolf Ridge — tailwind & mountain-wave downdrafts',dest:'WLF',fb:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'overcast',time:'noon',windDir:195,windSpd:16}},
+ ridgeSnow:{name:'⛰ Glacier Col (rwy 18) — night snowstorm, gusty crosswind',dest:'GLC',fb:'RBK',start:'approach',dist:6500,set:{plane:'lj45',weather:'snow',time:'night',windDir:255,windSpd:20}},
+ ridgeEfato:{name:'⛰ Summit Field — engine failure after takeoff',dest:'SMT',fb:'RBK',start:'takeoff',from:'SMT',fail:'efato',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:350,windSpd:8}},
+ ridgeBlocked:{name:'⛰ Pine Notch (rwy 18) — go around! vehicle on the runway',dest:'PNN',fb:'RBK',start:'approach',dist:6500,fail:'blocked',set:{plane:'lj45',weather:'scattered',time:'noon',windDir:20,windSpd:10}},
+ engine:{name:'🔥 Westbrook (rwy 18) — engine failure on short final',dest:'WBK',fb:'B',start:'approach',fail:'engine',set:{plane:'b738',weather:'overcast',time:'noon',windDir:300,windSpd:14}},
+ flapless:{name:'Cedar Flats — flapless approach, flaps jammed up',dest:'CDF',fb:'B',start:'approach',fail:'flapless',set:{plane:'b738',weather:'scattered',time:'noon',windDir:20,windSpd:8}},
+ gear:{name:'Pinecrest (rwy 18) — main gear failure, land on one main',dest:'PNC',fb:'B',start:'approach',fail:'gear',set:{plane:'a20n',weather:'scattered',time:'noon',windDir:20,windSpd:6}},
+ shear:{name:'🌪 Stormhaven — windshear on short final',dest:'STH',fb:'B',start:'approach',fail:'shear',set:{plane:'b738',weather:'storm',time:'noon',windDir:20,windSpd:15}},
 };
 function scen(){return SCEN[settings.start]||SCEN.takeoff;}
 const settings={plane:'f16',weather:'scattered',time:'noon',windDir:20,windSpd:6,start:'takeoff',invert:false,shadows:true,gfx:'auto',atcVoice:true};
@@ -1001,10 +1015,10 @@ function resetFlight(){
  if(fireball){scene.remove(fireball);fireball=null;}
  clearFX();clearRoute();S.ap=null;S.lastRA=undefined;newCallsign();if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}ATC.log.length=0;S.atc={t:0};Object.assign(S,{abSet:0,abArmed:false,abK:0,abActive:false,abWasActive:false,decel:0,prevGS:0,brakeK:0,slab:0,noseUp:false,bellyMsg:0,airT:0,shake:0,rev:0,spoilers:false,splrMsg:0,noRevMsg:0,dmg:freshDmg(),fire:0,ditched:false,sinkD:0,scrape:0,bldCD:0,belly:false,overMsg:0,tsMsg:0,p:0,qr:0,r:0,ab:0,brake:false,crashed:false,landed:false,stalled:false,time:0,timerOn:false,airborne:false,touch:null,turnRate:0,crashT:0});
  IN.pitch=IN.roll=IN.yaw=0;orbit.yaw=orbit.pitch=0;look.yaw=look.pitch=0;
- let SC=scen();if(!AIRPORTS.find(a=>a.id===(SC.dest||'B'))){settings.start='approach';SC=scen();}DEST=AIRPORTS.find(a=>a.id===(SC.dest||'B'))||AIRPORTS[1];const A=AIRPORTS[0],B=DEST,RI=rwyInfo(B);
+ let SC=scen();const apBy=id=>AIRPORTS.find(a=>a.id===id);DEST=apBy(SC.dest||'B')||apBy(SC.fb||'B')||AIRPORTS[1];const A=AIRPORTS[0],B=DEST,RI=rwyInfo(B);
  S.hook=false;S.trap=null;S.engOut=false;S.engFailArmed=SC.fail==='engine';S.shear=SC.fail==='shear'?{k:0,said:0}:null;
  if(SC.start==='takeoff'){
-  const TO=AIRPORTS.find(a=>a.id===(SC.from||'A'))||A,TR=rwyInfo(TO);S.pos.set(TO.x,TO.elev+P.gearH,TR.thrZ-TR.L*60);S.vel.set(0,0,0);S.q.copy(quatFrom(TR.hdg,0,0));S.thr=0;S.n1=0;S.gearDown=true;S.gearPos=1;S.flapIdx=P.toFlap;S.flapDeg=P.flaps[P.toFlap].deg;S.onGround=true;
+  const TO=SC.from?(apBy(SC.from)||apBy(SC.fb)||A):A,TR=rwyInfo(TO);S.pos.set(TO.x,TO.elev+P.gearH,TR.thrZ-TR.L*60);S.vel.set(0,0,0);S.q.copy(quatFrom(TR.hdg,0,0));S.thr=0;S.n1=0;S.gearDown=true;S.gearPos=1;S.flapIdx=P.toFlap;S.flapDeg=P.flaps[P.toFlap].deg;S.onGround=true;
   msg(`Cleared for takeoff, runway 36. Throttle up (R), rotate at ${Math.round(P.vr/KT)} kt (S / ↓)`,7,'#7fd6ff');
  }else{
   const via=SC.start==='via';const app=SC.start==='approach'||via;const dist=app?(SC.dist||6000):0;
@@ -1990,9 +2004,10 @@ function selfTest(){
   let lastThr=S.thr;window.__thrSw=0;let maxX=0;for(;t<400;t+=h){if(S.onGround&&S.airborne)maxX=Math.max(maxX,Math.abs(S.pos.x-DEST.x));if(S.ap.gsCap&&S.gearPos<.5){S.gearDown=true;S.flapIdx=P.landFlap;}physicsStep(h);if(S.ap.on&&!S.ap.flare)window.__thrSw+=Math.abs(S.thr-lastThr);lastThr=S.thr;{const ag=S.pos.y-P.gearH-Math.max(surfH(S.pos.x,S.pos.z),0);if(false&&(nm.includes('WORST 777')&&ag<40&&!S.ap.rollout&&Math.round(t*120)%24===0)||(st==='air'&&Math.round(t*120)%1200===0))out.push(`   ${nm.slice(9,20)} t${t.toFixed(1)} z${Math.round(S.pos.z-DEST.z)} x${Math.round(S.pos.x-DEST.x)} agl${ag.toFixed(1)} vs${S.vel.y.toFixed(2)} V${(S.V/KT).toFixed(0)} pit${(new THREE.Euler().setFromQuaternion(S.q,'YXZ').x*R2D).toFixed(1)} IN${IN.pitch.toFixed(2)} thr${S.thr.toFixed(2)} cap${+S.ap.locCap}${+S.ap.gsCap} fl${+S.ap.flare} gnd${+S.onGround} gH${Math.round(surfH(S.pos.x,S.pos.z))}`);}if(st==='air'&&0&&Math.round(t*120)%1200===0){const xE=S.pos.x-DEST.x;out.push(`   air t${t.toFixed(0)} x${Math.round(xE)} z${Math.round(S.pos.z-DEST.z)} alt${Math.round(S.pos.y)} V${(S.V/KT).toFixed(0)} hdg${Math.round(headingOf(S.q))} loc${(Math.atan2(xE,S.pos.z-(DEST.z-DEST.len/2))*R2D).toFixed(1)} cap${+S.ap.locCap}${+S.ap.gsCap} on${+S.ap.on} a${(S.alpha*R2D).toFixed(1)}`);}if(S.crashed||(S.onGround&&S.airborne&&Math.hypot(S.vel.x,S.vel.z)<1))break;}
   out.push(`${nm}: t=${t.toFixed(0)}s crashed=${S.crashed} landed=${S.landed} hull=${S.dmg.hull.toFixed(2)} touch=${S.touch?S.touch.fpm:'-'}fpm td@x${S.touch?Math.round(S.touch.x):'-'},z${S.touch?Math.round(S.touch.z):'-'} onRwy=${!!(S.touch&&S.touch.rw)} rolloutMaxX=${maxX.toFixed(1)}m ${S.touch&&S.touch.rw&&maxX<20&&!S.crashed?'PASS':'FAIL'} pos=${Math.round(S.pos.x-DEST.x)},${Math.round(S.pos.z-DEST.z)} | ${[...new Set(window.__msgLog)].filter(x=>/Touch|tip|Hard|gear|Tail|rough/i.test(x)).join(' / ').slice(0,200)}`);}
  settings.weather='clear';settings.windDir=20;settings.windSpd=6;applyEnv();
+ out.push('scenario→airport: '+Object.entries(SCEN).map(([k,v])=>k+'→'+((AIRPORTS.find(a=>a.id===v.dest)||{}).code||('FALLBACK '+v.fb))).join(' '));
  out.push('airports: '+AIRPORTS.map(a=>`${a.code}@${Math.round(a.x)},${Math.round(a.z)} elev${a.elev} land${a.land}${a.vias?' vias'+a.vias.length:''}`).join(' | '));{const hv=AIRPORTS.find(a=>a.id==='HVY');if(hv){let ring=0;for(let k=0;k<12;k++){const an=k/12*TAU;ring+=groundH(hv.x+Math.cos(an)*1300,hv.z+Math.sin(an)*1300);}out.push(`HVY ring mean ${Math.round(ring/12)} vs field ${hv.elev}`);}}
  for(const [nm,key,id,wx] of [['scripted HVY canyon Learjet','hidden','lj45','scattered'],['scripted EGP S-turn Learjet','eagle','lj45','scattered'],['scripted SDL arc A320','saddle','a20n','overcast'],['scripted HVY night snow Learjet','hiddenNight','lj45','snow'],['scripted RBK wave Learjet','ridgeWave','lj45','overcast'],['scripted RBK snow Learjet','ridgeSnow','lj45','snow'],['scripted RBK Learjet','ridge','lj45','scattered'],['scripted HBP A320','harbor','a20n','rain'],['scripted FRL 737 ice','ice','b738','snow'],['scripted CVN F/A-18 trap','carrier','f18','scattered'],
-   ['scripted engine-out 737','engine','b738','overcast'],['scripted flapless 737','flapless','b738','scattered'],['scripted gear-fail A320','gear','a20n','scattered'],['scripted windshear 737','shear','b738','storm']]){
+   ['scripted engine-out 737','engine','b738','overcast'],['scripted flapless 737','flapless','b738','scattered'],['scripted gear-fail A320','gear','a20n','scattered'],['scripted windshear 737','shear','b738','storm'],['scripted blocked Learjet','ridgeBlocked','lj45','scattered']]){
   window.__msgLog=[];run(nm,()=>{settings.plane=id;settings.start=key;const st=SCEN[key].set;settings.weather=wx;settings.windDir=st.windDir;settings.windSpd=st.windSpd;applyEnv();resetFlight();S.hook=key==='carrier';S.abSet=0;},flare(true,true),300);
   out[out.length-1]+=` dest=${DEST.code} trap=${S.trap?S.trap.wire:'-'} onRwyEnd=${!!onRunway(S.pos.x,S.pos.z)}`;}
  for(const [nm,key,id] of [['autoland HBP A320','harbor','a20n'],['autoland FRL 737','ice','b738']]){settings.plane=id;settings.start=key;const st=SCEN[key].set;settings.weather=st.weather;settings.windDir=st.windDir;settings.windSpd=st.windSpd;applyEnv();resetFlight();apEngage();S.abSet=4;S.abArmed=true;let t=0,maxX=0;

@@ -65,7 +65,7 @@ Press **F1** in game for the full key list.
 - Procedural island: hills, snow-capped mountains, a lake, farmland, forests, a city with lit windows at night, a town, road, wind turbines, a radio mast and a lighthouse.
 - Weather: clear, scattered, overcast, rain, thunderstorm (with lightning and thunder), fog and snow, plus wind direction and speed. Time of day: dawn, midday, sunset or night.
 
-**Scenarios (menu → Scenario)**
+**Scenarios (menu → Scenario)**: 19 scenarios at 17 different airfields. Every scenario has its own runway except the classic Hillcrest/Lakeside trio, and landings are both northbound (36) and southbound (18).
 - **Ridgeback Mountain (RBK):** a 1.6 km strip at about 800 m elevation, reached through a mountain valley. No ILS, just PAPI lights.
 - **Harbor Point (HBP):** a southbound approach over the sea to a runway that starts at the seawall, in gusty crosswinds.
 - **Frost Lake ice strip (FRL):** braking action poor on the ice, so use reverse thrust.
