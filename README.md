@@ -10,6 +10,8 @@ A browser flight sim in a single `index.html` (Three.js, no build step). Take of
 | 737 glass cockpit: PFD, ND, EICAS, MCP, CDUs | F-16 cockpit: HUD in the combiner, ILS needles, MFDs | Night: runway, taxiway and approach lights, landing lights |
 | ![A380 in a thunderstorm](docs/img/storm_a380.png) | ![F/A-18 at sunset](docs/img/sunset_f18.png) | ![ATC taxi instructions at night](docs/img/taxi_atc.png) |
 | A380 on approach in a thunderstorm | F/A-18 at sunset over the island | After landing: ATC taxi instructions, airport diagram |
+| ![Harbor Point pier runway](docs/img/harbor_pier.png) | ![Breakwater Island offshore runway](docs/img/breakwater_island.png) | |
+| Harbor Point: runway pier 900 m into the sea | Breakwater Island: offshore runway and causeway | |
 
 ## Play
 
@@ -65,9 +67,13 @@ Press **F1** in game for the full key list.
 - Procedural island: hills, snow-capped mountains, a lake, farmland, forests, a city with lit windows at night, a town, road, wind turbines, a radio mast and a lighthouse.
 - Weather: clear, scattered, overcast, rain, thunderstorm (with lightning and thunder), fog and snow, plus wind direction and speed. Time of day: dawn, midday, sunset or night.
 
-**Scenarios (menu → Scenario)**: 19 scenarios at 17 different airfields. Every scenario has its own runway except the classic Hillcrest/Lakeside trio, and landings are both northbound (36) and southbound (18).
+**Scenarios (menu → Scenario)**: 22 scenarios at 20 different airfields. Every scenario has its own runway except the classic Hillcrest/Lakeside trio, and landings are both northbound (36) and southbound (18).
 - **Ridgeback Mountain (RBK):** a 1.6 km strip at about 800 m elevation, reached through a mountain valley. No ILS, just PAPI lights.
-- **Harbor Point (HBP):** a southbound approach over the sea to a runway that starts at the seawall, in gusty crosswinds.
+- **Over water:** runways built on reclaimed piers with rock revetments, with nothing but sea if you land short, long or off the side:
+  - **Harbor Point (HBP):** the runway sticks 900 m out into the sea, with an approach-light jetty, a storm and a 30 kt crosswind.
+  - **Gull Rock (GRK):** a short 1.7 km pier runway on the south coast in a gusty crosswind off the sea.
+  - **Sandspit (SSP):** a 1.6 km spit runway, entirely over water, with the sea at the far end, a tailwind and a wet runway.
+  - **Breakwater Island (BWI):** an offshore runway linked to the coast by a causeway, flown in a 777 at night in fog with a 25 kt crosswind.
 - **Frost Lake ice strip (FRL):** braking action poor on the ice, so use reverse thrust.
 - **Carrier trap on CVN Resolute:** F/A-18 with tailhook (J), four arrestor wires and the meatball glideslope light. Miss the wires and it's a bolter; fly in low and it's a ramp strike.
 - **Turning mountain approaches** (sequenced strobes mark the path at night):
@@ -84,6 +90,7 @@ Press **F1** in game for the full key list.
   - stabilized at 500 ft: speed −5…+15 kt, sink rate under 1,000 ft/min, on the centerline, gear down and landing flaps
   - a touchdown-zone hit, within 5 m of the centerline, under 400 ft/min, at the right speed
   - stopping on the runway with no damage
+  - After the grade, press **U** (or throttle up) to keep flying: taxi, take off again or fly a circuit, and the next landing gets a new grade.
 - **Gusts:** sudden 10–25 kt gusts, mostly from the wind direction, on top of the turbulence. Wet, snowy and stormy runways reduce braking.
 - **Difficulty:** Normal, Hard (the default) or Expert. Expert removes the tail-strike protection, rotation limiting and automatic ground spoilers, lowers the sink-rate damage limit, and makes turbulence and gusts much stronger.
 - **Harder scenarios:**
